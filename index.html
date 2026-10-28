@@ -1,0 +1,1730 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wheel of Sakshi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@500;700;800;900&family=Shrikhand&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+<style>
+/* Layout: one game-show stage. Marquee-bulb wheel is the hero; cream challenge cards sit beside it; everything else lives in pop-up panels. */
+:root{
+  color-scheme: dark;
+  --stage:#2b0519; --stage-2:#5e0b30; --stage-3:#8c1043;
+  --pink:#ff2e93; --cherry:#d7193f; --lav:#b79cff; --baby:#ffb8d6;
+  --butter:#ffe07a; --cream:#fff4e3; --gold:#e9b949; --gold-hi:#fff0b3; --gold-lo:#a87618;
+  --ink:#3a0a1e; --ink-soft:#7a3a55; --line:rgba(255,224,122,.28);
+  --f-display:'Shrikhand', 'Georgia', cursive;
+  --f-marquee:'Bungee', 'Impact', 'Arial Black', sans-serif;
+  --f-body:'Nunito', 'Trebuchet MS', system-ui, sans-serif;
+  --txt-scale:1;
+}
+html,body{height:100%}
+body{
+  margin:0; font-family:var(--f-body); color:var(--cream); background:var(--stage);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -12%, rgba(255,46,147,.75) 0%, rgba(140,16,67,.55) 38%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, rgba(183,156,255,.22), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(215,25,63,.35), transparent 70%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+#bg-photo{position:fixed;inset:0;background-size:cover;background-position:center;opacity:.18;mix-blend-mode:screen;pointer-events:none;z-index:0}
+#glitter{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(1.4px 1.4px at 12% 18%, var(--gold-hi), transparent 60%),radial-gradient(1.2px 1.2px at 78% 12%, #fff, transparent 60%),radial-gradient(1.6px 1.6px at 66% 72%, var(--baby), transparent 60%),radial-gradient(1.2px 1.2px at 28% 82%, var(--gold-hi), transparent 60%),radial-gradient(1.3px 1.3px at 90% 46%, #fff, transparent 60%),radial-gradient(1.1px 1.1px at 46% 34%, var(--butter), transparent 60%),radial-gradient(1.5px 1.5px at 8% 58%, #fff, transparent 60%);
+  animation:twinkle 4s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.35}to{opacity:1}}
+.app{position:relative;z-index:1;min-height:100%;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:14px 28px}
+.f-display{font-family:var(--f-display);font-weight:400;letter-spacing:.005em}
+.f-marquee{font-family:var(--f-marquee);font-weight:400;letter-spacing:.04em}
+h1,h2,h3{text-wrap:balance;margin:0}
+.gold-text{background:linear-gradient(180deg,var(--gold-hi) 0%,var(--gold) 45%,var(--gold-lo) 52%,var(--gold) 70%,var(--gold-hi) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 rgba(58,10,30,.55))}
+.chrome-text{color:var(--cream);text-shadow:0 2px 0 var(--cherry),0 4px 0 var(--ink),0 0 24px rgba(255,46,147,.6)}
+
+/* Buttons: chunky game-show plungers */
+.btn{font-family:var(--f-marquee);letter-spacing:.05em;border:0;cursor:pointer;border-radius:999px;padding:.85em 1.5em;font-size:1rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:.5em;transition:transform .12s ease, box-shadow .12s ease, filter .12s;position:relative;user-select:none;-webkit-tap-highlight-color:transparent;color:var(--ink)}
+.btn:active{transform:translateY(4px)}
+.btn:focus-visible,.ibtn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.tab:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.btn-gold{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,#d39f2c);box-shadow:0 6px 0 var(--gold-lo),0 10px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.7)}
+.btn-gold:active{box-shadow:0 2px 0 var(--gold-lo),0 4px 10px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.7)}
+.btn-pink{background:linear-gradient(180deg,#ff7ab8,var(--pink) 60%);color:#fff;box-shadow:0 6px 0 #a4105a,0 10px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.45);text-shadow:0 1px 0 rgba(58,10,30,.4)}
+.btn-pink:active{box-shadow:0 2px 0 #a4105a}
+.btn-cream{background:var(--cream);box-shadow:0 5px 0 #d9bf9b,0 8px 18px rgba(0,0,0,.25)}
+.btn-cream:active{box-shadow:0 1px 0 #d9bf9b}
+.btn-lav{background:linear-gradient(180deg,#d8c9ff,var(--lav));box-shadow:0 5px 0 #6f52cc,0 8px 18px rgba(0,0,0,.25)}
+.btn-lav:active{box-shadow:0 1px 0 #6f52cc}
+.btn-ghost{background:rgba(255,244,227,.08);color:var(--cream);box-shadow:inset 0 0 0 2px var(--line)}
+.btn-ghost:hover{background:rgba(255,244,227,.15)}
+.btn-big{font-size:clamp(1.05rem,2.4vw,1.5rem);padding:1em 1.8em}
+.btn-huge{font-size:clamp(1.2rem,3.4vw,2rem);padding:1em 2em}
+.ibtn{width:42px;height:42px;border-radius:14px;border:0;display:inline-grid;place-items:center;cursor:pointer;background:rgba(255,244,227,.1);color:var(--cream);box-shadow:inset 0 0 0 1.5px var(--line);transition:background .15s}
+.ibtn:hover{background:rgba(255,244,227,.2)}
+.ibtn svg{width:20px;height:20px}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+
+/* Wheel */
+.wheel-wrap{position:relative;width:min(92vw,64vh,640px);aspect-ratio:1/1;max-width:100%;margin-inline:auto}
+.wheel-svg{width:100%;height:100%;display:block;filter:drop-shadow(0 24px 40px rgba(0,0,0,.45))}
+.pointer{position:absolute;left:50%;top:-3.5%;width:11%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 5px 0 rgba(58,10,30,.55))}
+.pointer.wiggle{animation:wig .12s linear infinite}
+@keyframes wig{0%,100%{transform:translateX(-50%) rotate(0)}50%{transform:translateX(-50%) rotate(-7deg)}}
+.bulb{animation:bulb 1.1s steps(1) infinite}
+.bulb.b2{animation-delay:.55s}
+.spinning .bulb{animation-duration:.22s}.spinning .bulb.b2{animation-delay:.11s}
+@keyframes bulb{0%{fill:var(--gold-hi)}50%{fill:#a5662a}}
+.live-label{font-family:var(--f-marquee);min-height:1.6em;text-align:center;font-size:clamp(.95rem,2vw,1.25rem);color:var(--butter);letter-spacing:.06em}
+
+/* Cards */
+.card{background:var(--cream);color:var(--ink);border-radius:28px;position:relative;box-shadow:0 0 0 4px var(--gold),0 0 0 9px var(--stage-2),0 0 0 11px var(--gold-lo),0 30px 60px rgba(0,0,0,.45)}
+.panel{background:linear-gradient(180deg,rgba(94,11,48,.92),rgba(43,5,25,.96));border-radius:24px;box-shadow:inset 0 0 0 1.5px var(--line),0 24px 60px rgba(0,0,0,.5)}
+.pill{display:inline-flex;align-items:center;gap:.45em;border-radius:999px;padding:.4em .9em;font-weight:800;font-size:.85rem;background:rgba(255,244,227,.1);box-shadow:inset 0 0 0 1.5px var(--line)}
+.tag{display:inline-flex;align-items:center;gap:.35em;font-family:var(--f-marquee);font-size:.72rem;letter-spacing:.08em;padding:.45em .8em;border-radius:999px}
+.challenge-text{font-weight:900;font-size:calc(clamp(1.35rem,2.5vw,2.3rem) * var(--txt-scale));line-height:1.22;letter-spacing:-.005em;text-wrap:pretty}
+.reveal-in{animation:revealIn .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes revealIn{0%{transform:scale(.6) rotate(-6deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.cat-banner{animation:bannerIn .6s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes bannerIn{0%{transform:translateY(-30px) scale(.8);opacity:0}100%{transform:none;opacity:1}}
+.photo-frame{border-radius:20px;overflow:hidden;aspect-ratio:4/3;max-width:100%;background:linear-gradient(135deg,var(--baby),var(--lav));position:relative;box-shadow:0 0 0 3px var(--gold),0 10px 0 -2px rgba(58,10,30,.15)}
+.photo-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.fit-bg{position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(22px) saturate(1.25) brightness(.95);opacity:.85;transform:scale(1.05)}
+.photo-frame img.fit-img{position:relative;object-fit:contain}
+.photo-frame.reveal-photo{aspect-ratio:auto;height:clamp(220px,40vh,460px);width:100%}
+.chip{border:0;cursor:pointer;border-radius:999px;padding:.6em 1em;font-weight:900;font-size:1rem;background:var(--baby);color:var(--ink);box-shadow:0 4px 0 #d77aa2;transition:transform .1s}
+.chip:active{transform:translateY(3px);box-shadow:0 1px 0 #d77aa2}
+.chip.on{background:var(--pink);color:#fff;box-shadow:0 4px 0 #a4105a}
+
+/* Overlays */
+.overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(20,2,12,.78);backdrop-filter:blur(6px);overflow-y:auto}
+.overlay-in{animation:fadeIn .25s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.warn-bg{background:repeating-linear-gradient(-45deg,rgba(215,25,63,.92) 0 26px,rgba(255,46,147,.92) 26px 52px);animation:warnflash .5s steps(1) 6, fadeIn .2s both}
+@keyframes warnflash{0%{filter:brightness(1.4)}50%{filter:brightness(.8)}}
+.shake{animation:shake .45s ease-in-out 2}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-1deg)}40%{transform:translateX(10px) rotate(1deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.gold-card{background:linear-gradient(160deg,var(--gold-hi),var(--gold) 45%,#c88f22 100%);color:var(--ink);border-radius:28px;box-shadow:0 0 0 4px #fff3c4,0 0 0 9px var(--gold-lo),0 0 60px rgba(233,185,73,.6)}
+
+/* Editor */
+.field{width:100%;border-radius:14px;border:0;padding:.7em .9em;font:inherit;font-weight:700;background:rgba(255,244,227,.95);color:var(--ink);box-shadow:inset 0 0 0 2px rgba(58,10,30,.12)}
+textarea.field{resize:vertical;min-height:84px;line-height:1.4}
+select.field{appearance:auto}
+.tab{border:0;cursor:pointer;font-family:var(--f-marquee);font-size:.85rem;letter-spacing:.06em;padding:.7em 1.1em;border-radius:999px;background:transparent;color:var(--cream);box-shadow:inset 0 0 0 1.5px var(--line)}
+.tab.on{background:var(--butter);color:var(--ink);box-shadow:none}
+.row{background:rgba(255,244,227,.06);border-radius:16px;box-shadow:inset 0 0 0 1px rgba(255,224,122,.16)}
+.label{font-family:var(--f-marquee);font-size:.7rem;letter-spacing:.1em;color:var(--butter)}
+.toggle{width:52px;height:30px;border-radius:999px;border:0;cursor:pointer;position:relative;background:rgba(255,244,227,.2);transition:background .2s;flex:none}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--cream);transition:transform .2s}
+.toggle.on{background:var(--pink)}.toggle.on::after{transform:translateX(22px)}
+.scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.toast-wrap{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:80;display:grid;gap:8px;width:min(92vw,460px)}
+.toast{background:var(--cream);color:var(--ink);font-weight:800;padding:.85em 1.1em;border-radius:16px;box-shadow:0 0 0 3px var(--gold),0 12px 30px rgba(0,0,0,.4);animation:revealIn .4s both}
+.toast.err{background:#ffd9df;box-shadow:0 0 0 3px var(--cherry),0 12px 30px rgba(0,0,0,.4)}
+.bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--butter));transition:width .9s cubic-bezier(.2,1.2,.4,1)}
+.welcome-photo{width:clamp(170px,30vw,260px);aspect-ratio:1/1;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 0 0 6px var(--gold),0 0 0 12px var(--pink),0 0 0 15px var(--gold-lo),0 0 70px rgba(255,46,147,.7);background:conic-gradient(from 0deg,var(--pink),var(--lav),var(--butter),var(--baby),var(--pink))}
+.welcome-photo img{width:100%;height:100%;object-fit:cover}
+.spin-slow{animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.float{animation:floaty 4s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-10px) rotate(6deg)}}
+.timer-ring{font-family:var(--f-marquee);font-variant-numeric:tabular-nums}
+.timer-done{animation:shake .4s 3;color:var(--cherry)}
+.disco{width:56px;height:56px;border-radius:50%;background:conic-gradient(#fff 0 10%,#c9b8ff 10% 20%,#fff 20% 30%,#ffd1e6 30% 40%,#fff 40% 50%,#c9b8ff 50% 60%,#fff 60% 70%,#ffd1e6 70% 80%,#fff 80% 90%,#c9b8ff 90%);box-shadow:inset -8px -8px 14px rgba(58,10,30,.35),0 0 30px rgba(255,255,255,.4)}
+.hidden-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.big-text{--txt-scale:1.25}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+
+<div id="bg-photo" hidden></div>
+<div id="glitter" aria-hidden="true"></div>
+<div id="root"><div style="display:grid;place-items:center;min-height:80vh;font-family:Bungee,Impact,sans-serif;color:#ffe07a;font-size:1.3rem;letter-spacing:.06em">Warming up the wheel…</div></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+/* =========================================================
+   STORAGE HELPERS
+   ========================================================= */
+const LS_CONFIG = 'wos.config.v1';
+const LS_GAME = 'wos.game.v1';
+const lsGet = (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const lsDel = (k) => { try { localStorage.removeItem(k); } catch (e) {} };
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const prefersReduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+
+// IndexedDB photo store (photos are too big for localStorage)
+const PhotoDB = (() => {
+  let dbp = null;
+  const open = () => {
+    if (!dbp) dbp = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open('wheel-of-sakshi', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('photos');
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    });
+    return dbp;
+  };
+  const run = async (mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('photos', mode);
+      fn(t.objectStore('photos'));
+      t.oncomplete = () => res(true);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error || new Error('Storage aborted'));
+    });
+  };
+  return {
+    put: (k, v) => run('readwrite', (s) => s.put(v, k)),
+    del: (k) => run('readwrite', (s) => s.delete(k)),
+    clear: () => run('readwrite', (s) => s.clear()),
+    all: async () => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const out = {};
+        const rq = db.transaction('photos', 'readonly').objectStore('photos').openCursor();
+        rq.onsuccess = () => { const c = rq.result; if (c) { out[c.key] = c.value; c.continue(); } else res(out); };
+        rq.onerror = () => rej(rq.error);
+      });
+    },
+  };
+})();
+
+function readAsImage(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => { const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error("That file isn't an image this browser can open. Try a JPG or PNG.")); img.src = fr.result; };
+    fr.onerror = () => rej(fr.error || new Error('Could not read that file.'));
+    fr.readAsDataURL(file);
+  });
+}
+function toJpeg(img, max, q) {
+  let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const s = Math.min(1, max / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff4e3'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', q);
+}
+async function compressImage(file) {
+  const img = await readAsImage(file);
+  let out = toJpeg(img, 1100, 0.82);
+  if (out.length > 900000) out = toJpeg(img, 800, 0.72);
+  if (out.length > 600000) out = toJpeg(img, 640, 0.62);
+  return out;
+}
+const kb = (s) => Math.round((s.length * 0.75) / 1024);
+
+/* =========================================================
+   SOUND (synthesised, no files)
+   ========================================================= */
+const Sound = (() => {
+  let ctx = null, on = true;
+  const ac = () => {
+    try {
+      if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    } catch (e) { return null; }
+  };
+  const tone = (freq, dur, type = 'square', vol = 0.08, when = 0) => {
+    if (!on) return; const c = ac(); if (!c) return;
+    const t = c.currentTime + when; const o = c.createOscillator(); const g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
+  };
+  return {
+    setOn: (v) => { on = v; }, unlock: () => ac(),
+    tick: () => tone(1500 + Math.random() * 250, 0.03, 'square', 0.045),
+    win: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.26, 'triangle', 0.13, i * 0.1)); tone(1319, 0.6, 'triangle', 0.11, 0.42); },
+    chaos: () => { [330, 262, 208, 165, 131].forEach((f, i) => tone(f, 0.2, 'sawtooth', 0.07, i * 0.09)); },
+    gold: () => { [784, 988, 1175, 1568, 1976].forEach((f, i) => tone(f, 0.35, 'sine', 0.12, i * 0.09)); },
+    buzz: () => { tone(110, 0.7, 'sawtooth', 0.13); tone(116, 0.7, 'sawtooth', 0.09); },
+    pop: () => tone(880, 0.07, 'triangle', 0.09),
+    siren: () => { for (let i = 0; i < 8; i++) tone(i % 2 ? 560 : 840, 0.17, 'sawtooth', 0.06, i * 0.17); },
+    fanfare: () => { const m = [523, 523, 523, 659, 784, 659, 784, 1047]; m.forEach((f, i) => tone(f, 0.3, 'triangle', 0.12, i * 0.16)); },
+  };
+})();
+
+const CONFETTI = ['#ff2e93', '#d7193f', '#b79cff', '#ffb8d6', '#ffe07a', '#fff4e3', '#e9b949'];
+function boom(kind = 'small') {
+  const f = window.confetti; if (!f) return;
+  if (prefersReduced()) { f({ particleCount: 40, spread: 60, colors: CONFETTI, origin: { y: 0.6 } }); return; }
+  if (kind === 'small') { f({ particleCount: 110, spread: 80, startVelocity: 40, colors: CONFETTI, origin: { y: 0.5 }, scalar: 1.05 }); return; }
+  if (kind === 'gold') { f({ particleCount: 140, spread: 100, colors: ['#fff0b3', '#e9b949', '#a87618', '#fff4e3'], shapes: ['star'], scalar: 1.3, origin: { y: 0.45 } }); return; }
+  const end = Date.now() + 3200;
+  (function frame() {
+    f({ particleCount: 7, angle: 60, spread: 65, origin: { x: 0, y: 0.7 }, colors: CONFETTI });
+    f({ particleCount: 7, angle: 120, spread: 65, origin: { x: 1, y: 0.7 }, colors: CONFETTI });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+  f({ particleCount: 240, spread: 140, startVelocity: 55, colors: CONFETTI, shapes: ['circle', 'square', 'star'], scalar: 1.2 });
+}
+
+/* =========================================================
+   CONTENT
+   {p} = the player whose turn it is · {r} = another random player
+   "V:" prefix = group-vote challenge (players tap names to vote)
+   ========================================================= */
+const SPICES = {
+  sweet: { key: 'sweet', emoji: '🌸', label: 'Sweet Sakshi', blurb: 'Silly, soft-hearted and friendship-first. Safe for aunties.', bg: 'linear-gradient(160deg,#ffd6e8,#ffb8d6 55%,#e9a6ff)' },
+  spicy: { key: 'spicy', emoji: '🌶️', label: 'Spicy Sakshi', blurb: 'Cheeky, embarrassing and a little savage. The house default.', bg: 'linear-gradient(160deg,#ff7ab8,#ff2e93 55%,#d7193f)' },
+  unhinged: { key: 'unhinged', emoji: '🔥', label: 'Unhinged Sakshi', blurb: 'Bold confessions, savage roasts, zero PR team. Anyone can still pass.', bg: 'linear-gradient(160deg,#d7193f,#8c1043 55%,#2b0519)' },
+};
+const SPICE_KEYS = ['sweet', 'spicy', 'unhinged'];
+
+const DEFAULT_CATS = [
+  { id: 'flags', emoji: '🚩', name: "Sakshi's Red Flags", short: 'Red Flags', theme: 'Funny quirks, harmless habits and iconic opinions', color: '#d7193f' },
+  { id: 'midnight', emoji: '🌙', name: 'Sakshi After Midnight', short: 'After Midnight', theme: 'Nights out, late-night chaos and incidents', color: '#7e5bef' },
+  { id: 'admit', emoji: '🤫', name: 'Things Sakshi Would Never Admit', short: 'Never Admit', theme: 'Guilty pleasures and embarrassing truths', color: '#ffb8d6' },
+  { id: 'isms', emoji: '🎭', name: 'Sakshi-isms', short: 'Sakshi-isms', theme: 'Impressions, catchphrases, iconic behaviour', color: '#ff2e93' },
+  { id: 'ex', emoji: '💌', name: 'The Ex Files', short: 'Ex Files', theme: 'Crushes, dating disasters, romantic delusions', color: '#ffe07a' },
+  { id: 'karat', emoji: '👑', name: '24 Karat Chaos', short: '24K Chaos', theme: 'Ridiculous scenarios, rankings, competitions', color: '#e2a93b' },
+  { id: 'truth', emoji: '💣', name: 'Truth Bomb', short: 'Truth Bomb', theme: 'Friendship lore, confessions, revelations', color: '#b79cff' },
+  { id: 'dare', emoji: '🔥', name: 'Dare to Sakshi', short: 'Dare', theme: 'Performances, acting challenges, dares', color: '#ff7f6e' },
+];
+
+const RAW = {
+  flags: {
+    sweet: [
+      "What's a hill Sakshi would die on, no matter how ridiculous? She gets 30 seconds to defend it.",
+      "V:If Sakshi came with a warning label, what would it say? Everyone pitches one, then vote for the best.",
+      "What's a completely harmless thing Sakshi takes WAY too seriously?",
+      "What could Sakshi give a 45-minute lecture on with zero preparation? {p} delivers the first 30 seconds of it.",
+      "What's something Sakshi does that makes everyone say 'of course she did'?",
+      "Rate Sakshi's punctuality from 'early bird' to 'arrives in a different time zone'. Everyone answers on three.",
+      "Turn one of Sakshi's quirks into a superpower. {p} pitches it like a Marvel trailer.",
+      "Everyone names one tiny, very specific Sakshi habit. Sakshi admits which one is the most accurate.",
+    ],
+    spicy: [
+      "What's Sakshi's most iconic unpopular opinion? The group debates it for 60 seconds.",
+      "If Sakshi had a personal PR team, what would they constantly be explaining?",
+      "What's the most Sakshi-coded decision she has ever made? Bonus point if she'd make it again.",
+      "V:Vote: who in this group gives Sakshi a run for her money in chaos? Sakshi isn't allowed to vote for herself.",
+      "What's the 'red flag' that's secretly the best thing about Sakshi? {p} argues the case.",
+      "{p} and {r} each name a Sakshi quirk. Sakshi picks the one she'd proudly put on her CV.",
+      "What's the pettiest thing Sakshi has ever been completely right about?",
+    ],
+    unhinged: [
+      "Describe Sakshi as a crime she would charm her way out of. {r} plays the judge.",
+      "Everyone admits one red flag of their own that Sakshi has had to put up with. Sakshi rates them out of ten.",
+      "V:Vote: who in this room is the biggest red flag? Sakshi is immune this round.",
+      "Voice notes, essays or a single 'k'? {p} performs a typical Sakshi group-chat message.",
+      "The group has 60 seconds to agree on Sakshi's top three most iconic quirks, in order. She can veto one.",
+      "{p} roasts Sakshi for 20 seconds, then compliments her for 20 seconds. Same energy for both.",
+      "Which of Sakshi's habits has everyone in this room secretly picked up? Confess.",
+    ],
+  },
+  midnight: {
+    sweet: [
+      "Which version of Sakshi appears after two drinks? Name her and give her a catchphrase.",
+      "Who would Sakshi call at 3 AM, and what would the call actually be about?",
+      "What's the funniest spontaneous plan you've ever made with Sakshi?",
+      "If Sakshi hosted an afterparty, what would absolutely happen? Everyone adds one thing.",
+      "What's Sakshi's go-to late-night snack, and what does it say about her?",
+      "Recreate this group arriving at a party with Sakshi leading the way. Freeze-frame at the door.",
+      "What's one unforgettable thing Sakshi has said after midnight?",
+      "V:Vote: who in this room is the best person to have at a sleepover?",
+    ],
+    spicy: [
+      "Recreate Sakshi's most iconic night out in 30 seconds. {r} plays everyone else.",
+      "What's one night-out story involving Sakshi that still makes everyone laugh?",
+      "Recreate Sakshi trying to convince everyone she's completely sober.",
+      "V:Vote: who in this group is first to say 'one more drink' and last to leave?",
+      "Act out Sakshi befriending a stranger in the bathroom queue. {r} plays the stranger.",
+      "What's the most chaotic group-chat message sent after midnight? The sender has to explain it.",
+      "Describe a typical night out with this group as a 30-second movie trailer.",
+    ],
+    unhinged: [
+      "Tell the most chaotic night-out story you're allowed to tell. Sakshi can veto one detail.",
+      "Everyone confesses their own most questionable night-out decision. Sakshi crowns the worst.",
+      "Act out Sakshi talking her way past a bouncer. {r} plays the bouncer and must not crack.",
+      "Name three night-out rules this group swears by and breaks every single time.",
+      "V:Vote: who in this room has the most dirt on everyone else's nights out?",
+      "Recreate the 4 AM walk home: heels in hand, a full monologue, one emotional phone call. {p} stars.",
+      "What's the most unhinged thing someone here has done to catch the last train or cab? Confessions only.",
+    ],
+  },
+  admit: {
+    sweet: [
+      "What's something Sakshi secretly loves but pretends not to?",
+      "What's Sakshi's funniest guilty pleasure? If the group guesses it, she has to own it.",
+      "Everyone guesses Sakshi's most unexpected obsession. She reveals the answer.",
+      "What's something Sakshi is secretly very good at?",
+      "Which cartoon or kids' show would Sakshi still happily watch today?",
+      "What's Sakshi's guilty-pleasure song? Hum the chorus and everyone has to join in.",
+      "Sakshi reveals one harmless, embarrassing confession. Anything from 'I can't whistle' upwards.",
+      "What's something Sakshi claims she doesn't care about but absolutely does?",
+    ],
+    spicy: [
+      "What's Sakshi's most irrational ick? Not just dating: food, fonts, people who clap when the plane lands.",
+      "What opinion would Sakshi passionately defend in a debate? {r} argues the other side.",
+      "Sakshi's screen-time report just leaked. Which app is top, and by how many hours?",
+      "Everyone writes one harmless confession on a scrap of paper. Sakshi reads them out and guesses who wrote each.",
+      "What's Sakshi's most embarrassing 'I thought nobody was watching' moment?",
+      "V:Vote: whose style or habits has Sakshi secretly copied?",
+      "What's the last excuse Sakshi used to get out of plans? Was it true?",
+    ],
+    unhinged: [
+      "Sakshi reads out the third most recent search on her phone. Passing means a dare from {r}.",
+      "Everyone reveals their most-used emoji. Sakshi decides what it says about each of them.",
+      "Sakshi confesses the most dramatic thing she's done to avoid one awkward conversation.",
+      "What's the pettiest reason Sakshi has ever unfollowed someone? Then everyone else confesses theirs.",
+      "Sakshi's camera roll is mostly: selfie rehearsals, chat screenshots, or something worse? She has to answer.",
+      "V:Vote: who in this room is most likely to have a secret account?",
+      "Everyone confesses one thing they've never told the group. Harmless or hilarious only. Passing is fine.",
+    ],
+  },
+  isms: {
+    sweet: [
+      "Perform Sakshi reacting to unexpected gossip.",
+      "What's the most Sakshi-coded sentence ever spoken? Say it in her voice.",
+      "V:Everyone recreates Sakshi's most iconic facial expression at once. Vote for the best.",
+      "Which phrase should be legally trademarked by Sakshi?",
+      "Narrate Sakshi getting ready for a night out like a wildlife documentary.",
+      "If Sakshi were a sitcom character, what would her signature scene be? Act it out.",
+      "Impersonate Sakshi convincing everyone to go on a spontaneous trip.",
+      "Do Sakshi ordering food five minutes after announcing 'I'm not hungry'.",
+    ],
+    spicy: [
+      "Give a dramatic movie-trailer voiceover for an ordinary Tuesday in Sakshi's life.",
+      "Sakshi sends an eight-minute voice note. {p} performs the highlights in 30 seconds.",
+      "Do Sakshi saying 'I'm literally five minutes away' while clearly still at home.",
+      "V:Impression battle: {p} vs {r}, both doing Sakshi telling a story with five tangents. Vote for the winner.",
+      "Perform Sakshi arguing with customer service, and winning.",
+      "Sakshi does an impression of {p}. Then {p} does Sakshi. The group decides who nailed it.",
+      "Do Sakshi's reaction when the food finally arrives at the table.",
+    ],
+    unhinged: [
+      "Perform Sakshi typing, deleting and retyping a message to someone she's annoyed with.",
+      "Do Sakshi rehearsing a confrontation in the shower, then being extremely polite in person.",
+      "V:Everyone does their best Sakshi laugh. Vote for the most accurate.",
+      "Sakshi narrates {p}'s life for 30 seconds in her most dramatic voice.",
+      "Act out Sakshi 'casually' steering the conversation towards gossip she's dying to share.",
+      "{p} performs Sakshi's reality-show audition tape. 45 seconds, full confessional energy.",
+      "Everyone does an impression of someone else in the room. The group guesses who. Sakshi goes first.",
+    ],
+  },
+  ex: {
+    sweet: [
+      "Describe Sakshi's type in three hilariously specific words.",
+      "If Sakshi's love life were a film, what would it be called?",
+      "Which fictional character would be Sakshi's perfect match?",
+      "What's Sakshi's most unexpected green flag?",
+      "What's the most ridiculous romantic grand gesture Sakshi would secretly love?",
+      "{p} plans Sakshi's ideal first date. Sakshi rates it out of ten.",
+      "V:Vote: who in this room would be Sakshi's best wingperson?",
+      "Everyone names the celebrity they'd set Sakshi up with. She picks one.",
+    ],
+    spicy: [
+      "What's Sakshi's most questionable celebrity crush?",
+      "Which dating opinion would Sakshi passionately defend? {r} is the prosecution.",
+      "Create an outrageously dramatic fictional dating profile for Sakshi.",
+      "Read Sakshi's dating bio as if her mum wrote it.",
+      "{p} acts out Sakshi texting someone she likes, then someone she doesn't.",
+      "V:Vote: who in this room gives the worst dating advice?",
+      "Everyone shares their own most irrational dating ick. Sakshi ranks them.",
+    ],
+    unhinged: [
+      "Sakshi rates her past romances as kitchen appliances. No names, just appliances.",
+      "What's the most unhinged post-breakup decision anyone in this room has made? Bangs count.",
+      "Sakshi's dating history as a football lineup: captain, bench, and the one who should retire.",
+      "Everyone shares the cringiest pickup line they've ever used or received.",
+      "Everyone rates Sakshi's flirting 1 to 10 with their fingers. She justifies her score by flirting with a lamp.",
+      "V:Vote: who in this room is most likely to text an ex tonight?",
+      "If someone Sakshi dated left her a review, what would it say? Sakshi writes the reply.",
+    ],
+  },
+  karat: {
+    sweet: [
+      "If Sakshi became famous tomorrow, what would she be famous for?",
+      "Give Sakshi a ridiculously specific reality TV show title.",
+      "If Sakshi became Prime Minister, what's the first ridiculous law she'd introduce?",
+      "Give Sakshi a dramatic superhero origin story. Everyone adds one sentence.",
+      "Invent a product Sakshi would buy without hesitation. {p} does the advert.",
+      "If Sakshi had a fan club, what would its members be called? Do the fan chant.",
+      "Sakshi's life is a Bollywood blockbuster. Title, villain, and who in this room plays the comic sidekick?",
+      "V:Vote: who in this room would Sakshi take to a desert island?",
+    ],
+    spicy: [
+      "Invent a fictional scandal involving Sakshi. She picks the funniest.",
+      "If Sakshi were secretly living a double life, what would her second identity be?",
+      "Sakshi casts everyone in her heist movie: the mastermind, the getaway driver, and who gets caught first.",
+      "Sakshi ranks everyone by who she'd trust to help hide a fictional body.",
+      "V:Debate: should Sakshi be allowed to run a country? {p} argues for, {r} against. Vote for the winner.",
+      "Sakshi gets a true-crime documentary. What's the twist in episode three?",
+      "Everyone gives the group's odds of surviving a zombie apocalypse with Sakshi in charge, as a percentage.",
+    ],
+    unhinged: [
+      "Sakshi ranks the room from 'most likely to be famous' to 'most likely to be on the news for the wrong reasons'.",
+      "Sakshi has a million pounds and 24 hours. Plan her day as a group. It must end in disaster.",
+      "Hostage negotiation: {p} has 60 seconds to convince Sakshi to give up the aux.",
+      "Sakshi picks one person here to swap lives with for a week, and explains why. Diplomatically.",
+      "V:Vote: who in this room would sell everyone else out for a free drink?",
+      "Everyone writes a newspaper headline about this group from the year 2040. Read them out.",
+      "This group is now a girl band. Name it, give everyone a role, and perform the first line of the debut single.",
+    ],
+  },
+  truth: {
+    sweet: [
+      "What was your first impression of Sakshi versus what you think now?",
+      "What's your favourite memory with Sakshi that still makes you laugh?",
+      "What's one thing Sakshi does that instantly makes you smile?",
+      "What's a tiny thing Sakshi does that makes her unmistakably herself?",
+      "What's one memory with Sakshi you'd love to relive?",
+      "What's something Sakshi is genuinely amazing at?",
+      "What's something about Sakshi you hope never changes?",
+      "V:Vote: who in this group understands Sakshi without needing an explanation?",
+    ],
+    spicy: [
+      "What's the most Sakshi thing Sakshi has ever done?",
+      "What's an inside joke with Sakshi that nobody else would understand? Explain it badly.",
+      "Which Sakshi story deserves to be told at every birthday? Tell it now.",
+      "When did Sakshi make your day better without even realising?",
+      "What's the worst advice Sakshi ever gave you that you followed anyway? How did it go?",
+      "V:Vote: who in this room has known Sakshi through her most chaotic era?",
+      "{p} tells the story of how you met Sakshi. Then Sakshi tells her version. Whose is more dramatic?",
+    ],
+    unhinged: [
+      "What's one thing you've learned from being friends with Sakshi? Funny or real, your call.",
+      "Tell Sakshi one thing you've never told her. Kind or hilarious only. Passing is fine.",
+      "Sakshi reveals who in this room she'd call for bail money, and who she'd call for the gossip afterwards.",
+      "What's the biggest fight in this group's history, and who was actually right?",
+      "Who in this room did Sakshi not get at first? She answers honestly, then they get a reply.",
+      "V:Vote: who in this room is secretly Sakshi's favourite? Sakshi stays silent until the reveal.",
+      "What's the one thing Sakshi needs to hear tonight? Sweet or savage, your call.",
+    ],
+  },
+  dare: {
+    sweet: [
+      "Give a dramatic Oscar acceptance speech as Sakshi.",
+      "Recreate your funniest memory with Sakshi in 30 seconds.",
+      "Invent a dance move named after Sakshi and teach it to the room.",
+      "Recreate an iconic Sakshi photo using only objects in the room.",
+      "Perform a dramatic weather forecast based on Sakshi's mood today.",
+      "Act out Sakshi finding out she's won an all-expenses-paid holiday.",
+      "Introduce Sakshi like she's walking into a reality TV villa.",
+      "Sing Happy Birthday to Sakshi as an opera singer, with full vibrato.",
+    ],
+    spicy: [
+      "Give a sales pitch for why everyone needs a Sakshi in their life.",
+      "Deliver an award-ceremony speech honouring Sakshi for a very niche achievement.",
+      "Perform a dramatic movie-trailer voiceover for Sakshi's life story.",
+      "Write and perform a four-line birthday rap for Sakshi. You have 60 seconds.",
+      "{p} can only speak in Sakshi's catchphrases until their next turn.",
+      "Recreate Sakshi realising she left her phone in the cab, in slow motion.",
+      "V:{p} and {r} each give a 20-second motivational speech as Sakshi. Vote for the winner.",
+    ],
+    unhinged: [
+      "Let Sakshi send one harmless emoji from your phone to anyone she chooses. Or take a forfeit from {r}.",
+      "Runway-walk to the door and back while the room commentates like it's fashion week.",
+      "Serenade Sakshi on one knee with a song chosen by {r}.",
+      "Speak in a posh British accent for the next two rounds. Every slip, you owe Sakshi a compliment.",
+      "Recreate Sakshi's most dramatic photo pose. Sakshi directs, someone takes the picture.",
+      "Give Sakshi a 30-second boxing-coach pep talk for her 25th year.",
+      "The whole group performs a 15-second boy-band tribute to Sakshi. {p} choreographs.",
+    ],
+  },
+};
+
+const SPOTLIGHTS = [
+  { title: 'Funniest Memory Round', text: 'Everyone shares their funniest memory with Sakshi in one sentence. Sakshi picks the winner.' },
+  { title: 'Three Words', text: 'Each person describes Sakshi in exactly three words. No repeating anyone else.' },
+  { title: 'Face Off', text: 'Everyone recreates their favourite Sakshi expression at the same time. Sakshi picks the most accurate.' },
+  { title: 'Quick Appreciation', text: 'Each person shares one thing they genuinely appreciate about Sakshi. Ten seconds each, no speeches.' },
+  { title: 'Box Office Hit', text: "The group names the movie of Sakshi's life, one word per person, going round the circle." },
+  { title: 'The Sakshi Awards', text: 'Sakshi hands out a made-up award to every person in the room.' },
+  { title: 'Photo Recreation', text: 'Recreate one old photo of this group. Sakshi directs, someone takes the picture.' },
+  { title: 'Year in Review', text: "Everyone finishes the sentence: 'The most Sakshi moment of this year was...'" },
+];
+
+const CHAOS = [
+  { title: 'PLOT TWIST', text: 'Everyone must impersonate Sakshi at once. Ten seconds. Maximum volume.' },
+  { title: 'FRIENDSHIP AUDIT', text: "Who remembers Sakshi's favourite snack? First correct answer wins. Sakshi is the judge." },
+  { title: 'REVERSE UNO', text: '{p} chooses someone else to take this turn. Spin again for them.' },
+  { title: 'THE SAKSHI EFFECT', text: 'Everyone tells their funniest 10-second Sakshi story, one after another.' },
+  { title: 'SWITCHEROO', text: '{p} and {r} swap seats and personalities until the next turn.' },
+  { title: 'BIRTHDAY TAX', text: 'Everyone pays Sakshi one sincere compliment. No sarcasm allowed.' },
+  { title: 'HOT SEAT', text: 'Sakshi fires three rapid questions at {p}. Answer each in under three seconds.' },
+  { title: 'CORONATION', text: 'Everyone bows the next time Sakshi speaks. Anyone who forgets does a dare chosen by {r}.' },
+];
+
+function buildDefaultQuestions() {
+  const out = [];
+  Object.entries(RAW).forEach(([cat, levels]) => {
+    Object.entries(levels).forEach(([lvl, list]) => {
+      list.forEach((raw, i) => {
+        const vote = raw.startsWith('V:');
+        out.push({ id: `d-${cat}-${lvl}-${i}`, cat, lvl, text: vote ? raw.slice(2) : raw, vote, photoId: null, origin: 'default' });
+      });
+    });
+  });
+  return out;
+}
+const defaultCats = () => DEFAULT_CATS.map((c) => ({ ...c, enabled: true, photoId: null, origin: 'default' }));
+const defaultConfig = () => ({ version: 1, categories: defaultCats(), questions: buildDefaultQuestions(), spice: 'spicy', sound: true, mainPhotoId: null, bgPhotoId: null, finalePhotoIds: [], albums: { expressions: [], nights: [], group: [] }, finalPhotoId: null, bigText: false, contentVersion: 2 });
+const freshGame = () => ({ players: [], scoring: true, turn: 0, spins: 0, completed: 0, played: {}, history: [], finaleShown: false, active: false });
+
+function loadConfig() {
+  const c = lsGet(LS_CONFIG); const d = defaultConfig();
+  if (!c || !Array.isArray(c.categories) || !Array.isArray(c.questions)) return d;
+  return migrateConfig({ ...d, ...c });
+}
+function migrateConfig(c) {
+  const albums = { expressions: [], nights: [], group: [], ...(c.albums || {}) };
+  if (Array.isArray(c.finalePhotoIds) && c.finalePhotoIds.length) { albums.group = [...new Set([...albums.group, ...c.finalePhotoIds])]; }
+  let out = { ...c, albums, finalePhotoIds: [] };
+  if ((c.contentVersion || 1) < 2) {
+    // Swap in the rewritten built-in challenges; keep everything the user added.
+    const custom = (c.questions || []).filter((q) => q.origin === 'custom');
+    const cats = (c.categories || []).map((x) => x.id === 'flags' && x.origin === 'default' ? { ...x, theme: 'Funny quirks, harmless habits and iconic opinions' } : x);
+    out = { ...out, categories: cats, questions: [...custom, ...buildDefaultQuestions()] };
+  }
+  return { ...out, contentVersion: 2 };
+}
+const ALBUMS = [
+  { key: 'expressions', label: 'Funny Sakshi expressions', hint: 'Shown on Red Flags, Never Admit, Sakshi-isms, Ex Files and Dare reveals' },
+  { key: 'nights', label: 'Night-out photos', hint: 'Shown on After Midnight reveals' },
+  { key: 'group', label: 'Friendship group photos', hint: 'Shown on 24 Karat Chaos and Truth Bomb reveals, and in the finale' },
+];
+const ALBUM_FOR = { flags: 'expressions', admit: 'expressions', isms: 'expressions', ex: 'expressions', dare: 'expressions', midnight: 'nights', karat: 'group', truth: 'group' };
+function pickRevealPhoto(cfg, photos, cat, q) {
+  if (q && q.photoId && photos[q.photoId]) return q.photoId;
+  const albums = cfg.albums || {};
+  const albumIds = ALBUM_FOR[cat.id] ? (albums[ALBUM_FOR[cat.id]] || []) : [...(albums.expressions || []), ...(albums.nights || []), ...(albums.group || [])];
+  const options = [cat.photoId, ...albumIds].filter((id) => id && photos[id]);
+  if (options.length) return pick(options);
+  return cfg.mainPhotoId && photos[cfg.mainPhotoId] ? cfg.mainPhotoId : null;
+}
+function loadGame() {
+  const g = lsGet(LS_GAME); const d = freshGame();
+  if (!g || !Array.isArray(g.players)) return d;
+  return { ...d, ...g };
+}
+
+/* =========================================================
+   SMALL UTILITIES
+   ========================================================= */
+function textOn(hex) {
+  let h = (hex || '#000').replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#3a0a1e' : '#fff6ea';
+}
+const mod = (a, n) => ((a % n) + n) % n;
+const indexAt = (rot, n) => Math.floor(mod(360 - mod(rot, 360), 360) / (360 / n)) % n;
+const fill = (text, pName, rName) => text.replace(/\{p\}/g, pName).replace(/\{r\}/g, rName);
+
+const ICONS = {
+  x: ['M18 6 6 18', 'm6 6 12 12'], plus: ['M5 12h14', 'M12 5v14'], check: ['M20 6 9 17l-5-5'],
+  trash: ['M3 6h18', 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6', 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'],
+  trophy: ['M6 9H4.5a2.5 2.5 0 0 1 0-5H6', 'M18 9h1.5a2.5 2.5 0 0 0 0-5H18', 'M4 22h16', 'M18 2H6v7a6 6 0 0 0 12 0V2Z', 'M12 15v4', 'M8 22v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1'],
+  history: ['M3 12a9 9 0 1 0 3-6.7L3 8', 'M3 3v5h5', 'M12 7v5l4 2'],
+  max: ['M8 3H5a2 2 0 0 0-2 2v3', 'M21 8V5a2 2 0 0 0-2-2h-3', 'M3 16v3a2 2 0 0 0 2 2h3', 'M16 21h3a2 2 0 0 0 2-2v-3'],
+  vol: ['M11 5 6 9H2v6h4l5 4V5z', 'M15.54 8.46a5 5 0 0 1 0 7.07', 'M19.07 4.93a10 10 0 0 1 0 14.14'],
+  mute: ['M11 5 6 9H2v6h4l5 4V5z', 'm22 9-6 6', 'm16 9 6 6'],
+  pencil: ['M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', 'm15 5 4 4'],
+  upload: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M17 8l-5-5-5 5', 'M12 3v12'],
+  copy: ['M8 8h12v12H8z', 'M4 16V4h12'], skip: ['m5 4 10 8-10 8V4z', 'M19 5v14'],
+  refresh: ['M3 12a9 9 0 0 1 15-6.7L21 8', 'M21 3v5h-5', 'M21 12a9 9 0 0 1-15 6.7L3 16', 'M3 21v-5h5'],
+  timer: ['M10 2h4', 'M12 14l3-3', 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z'],
+  home: ['m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'], type: ['M4 7V4h16v3', 'M9 20h6', 'M12 4v16'],
+  image: ['M3 3h18v18H3z', 'm21 15-5-5L5 21', 'M9 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2z'], users: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+};
+function Icon({ name, size = 20 }) {
+  return (<svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{(ICONS[name] || []).map((d, i) => <path key={i} d={d} />)}</svg>);
+}
+
+/* =========================================================
+   WHEEL
+   ========================================================= */
+function segPath(i, n, r) {
+  if (n === 1) return `M 0 ${-r} A ${r} ${r} 0 1 1 0 ${r} A ${r} ${r} 0 1 1 0 ${-r} Z`;
+  const seg = 360 / n; const a0 = ((i * seg - 90) * Math.PI) / 180; const a1 = (((i + 1) * seg - 90) * Math.PI) / 180;
+  return `M0 0 L${(r * Math.cos(a0)).toFixed(2)} ${(r * Math.sin(a0)).toFixed(2)} A${r} ${r} 0 ${seg > 180 ? 1 : 0} 1 ${(r * Math.cos(a1)).toFixed(2)} ${(r * Math.sin(a1)).toFixed(2)} Z`;
+}
+function Wheel({ cats, rotorRef, rotRef, hubPhoto, spinning }) {
+  const n = cats.length; const R = 200; const seg = 360 / Math.max(n, 1);
+  const BULBS = 30;
+  useEffect(() => { rotorRef.current && rotorRef.current.setAttribute('transform', `rotate(${rotRef.current})`); }, [n]);
+  const fs = n <= 8 ? 15 : n <= 10 ? 13 : 11;
+  return (
+    <div className={`wheel-wrap ${spinning ? 'spinning' : ''}`}>
+      <div className={`pointer ${spinning ? 'wiggle' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 60 74" style={{ width: '100%', display: 'block' }}>
+          <defs><linearGradient id="pg" x1="0" x2="1"><stop offset="0" stopColor="#fff0b3" /><stop offset=".5" stopColor="#e9b949" /><stop offset="1" stopColor="#a87618" /></linearGradient></defs>
+          <path d="M30 72 L5 16 Q30 -6 55 16 Z" fill="url(#pg)" stroke="#3a0a1e" strokeWidth="3" strokeLinejoin="round" />
+          <circle cx="30" cy="20" r="7" fill="#ff2e93" stroke="#3a0a1e" strokeWidth="2.5" />
+        </svg>
+      </div>
+      <svg viewBox="-236 -236 472 472" className="wheel-svg" role="img" aria-label={`Prize wheel with ${n} categories`}>
+        <defs>
+          <radialGradient id="rim" cx="50%" cy="40%" r="60%"><stop offset="0" stopColor="#c4145a" /><stop offset="1" stopColor="#5e0b30" /></radialGradient>
+          <radialGradient id="gloss" cx="50%" cy="20%" r="70%"><stop offset="0" stopColor="#fff" stopOpacity=".35" /><stop offset=".55" stopColor="#fff" stopOpacity="0" /></radialGradient>
+          <radialGradient id="hubg" cx="40%" cy="35%" r="70%"><stop offset="0" stopColor="#ff7ab8" /><stop offset="1" stopColor="#a4105a" /></radialGradient>
+          <linearGradient id="goldring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff0b3" /><stop offset=".45" stopColor="#e9b949" /><stop offset=".55" stopColor="#a87618" /><stop offset="1" stopColor="#fff0b3" /></linearGradient>
+          <clipPath id="hubclip"><circle r="56" /></clipPath>
+        </defs>
+        <circle r="232" fill="url(#rim)" stroke="url(#goldring)" strokeWidth="6" />
+        {Array.from({ length: BULBS }).map((_, i) => {
+          const a = (i / BULBS) * Math.PI * 2;
+          return <circle key={i} className={`bulb ${i % 2 ? 'b2' : ''}`} cx={(218 * Math.cos(a)).toFixed(2)} cy={(218 * Math.sin(a)).toFixed(2)} r="6.2" fill="#fff0b3" stroke="#5e0b30" strokeWidth="1.5" />;
+        })}
+        <g ref={rotorRef}>
+          {cats.map((c, i) => {
+            const mid = i * seg + seg / 2; const left = mid > 180; const tc = textOn(c.color);
+            return (
+              <g key={c.id}>
+                <path d={segPath(i, n, R)} fill={c.color} stroke="#fff4e3" strokeWidth="3" />
+                <g transform={`rotate(${left ? mid + 90 : mid - 90})`}>
+                  <text x={left ? -188 : 188} y="0" textAnchor={left ? 'start' : 'end'} dominantBaseline="middle" fill={tc} style={{ fontFamily: "Bungee, Impact, sans-serif", fontSize: fs, letterSpacing: '.03em' }}>
+                    {left ? `${c.emoji} ${c.short || c.name}` : `${c.short || c.name} ${c.emoji}`}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+          <circle r={R} fill="url(#gloss)" pointerEvents="none" />
+        </g>
+        <circle r={R + 2} fill="none" stroke="url(#goldring)" strokeWidth="7" />
+        <circle r="64" fill="url(#goldring)" />
+        <circle r="58" fill="url(#hubg)" stroke="#3a0a1e" strokeWidth="2" />
+        {hubPhoto
+          ? <image href={hubPhoto} x="-56" y="-56" width="112" height="112" preserveAspectRatio="xMidYMid slice" clipPath="url(#hubclip)" />
+          : (<g><text y="-4" textAnchor="middle" fill="#fff4e3" style={{ fontFamily: 'Shrikhand, Georgia, cursive', fontSize: 34 }}>Sakshi</text><text y="28" textAnchor="middle" fill="#ffe07a" style={{ fontFamily: 'Bungee, Impact, sans-serif', fontSize: 22 }}>24</text></g>)}
+        <circle r="56" fill="none" stroke="#fff4e3" strokeWidth="2.5" />
+      </svg>
+    </div>
+  );
+}
+
+/* =========================================================
+   SMALL COMPONENTS
+   ========================================================= */
+function Toasts({ items }) {
+  return <div className="toast-wrap" role="status" aria-live="polite">{items.map((t) => <div key={t.id} className={`toast ${t.err ? 'err' : ''}`}>{t.msg}</div>)}</div>;
+}
+function Toggle({ on, onChange, label, id }) {
+  return <button id={id} type="button" role="switch" aria-checked={on} aria-label={label} className={`toggle ${on ? 'on' : ''}`} onClick={() => onChange(!on)} />;
+}
+function FilePick({ id, onFile, children, className = 'btn btn-cream', multiple = false }) {
+  const ref = useRef(null);
+  return (<>
+    <input id={id} ref={ref} type="file" accept="image/*" multiple={multiple} className="hidden-input" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ''; fs.forEach(onFile); }} />
+    <button type="button" className={className} onClick={() => ref.current && ref.current.click()}>{children}</button>
+  </>);
+}
+function FitImg({ src, alt }) {
+  return (<>
+    <div className="fit-bg" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
+    <img className="fit-img" src={src} alt={alt} />
+  </>);
+}
+function Placeholder({ cat, small }) {
+  return (
+    <div className="w-full h-full grid place-items-center relative" style={{ background: `radial-gradient(circle at 30% 25%, #fff4e3 0%, transparent 45%), linear-gradient(135deg, ${cat ? cat.color : '#ff2e93'}, #b79cff)` }}>
+      <div className="text-center" style={{ color: '#3a0a1e' }}>
+        <div className="float" style={{ fontSize: small ? '2.6rem' : 'clamp(3rem,7vw,5rem)' }}>{cat ? cat.emoji : '✨'}</div>
+        {!small && <div className="f-marquee mt-2" style={{ fontSize: '.72rem', letterSpacing: '.12em', opacity: .75 }}>Photo pending · add one in Edit Game</div>}
+      </div>
+      <span aria-hidden="true" style={{ position: 'absolute', top: '12%', left: '14%', fontSize: '1.4rem' }}>✦</span>
+      <span aria-hidden="true" style={{ position: 'absolute', bottom: '14%', right: '12%', fontSize: '1.1rem' }}>♥</span>
+      <span aria-hidden="true" style={{ position: 'absolute', top: '20%', right: '20%', fontSize: '.9rem' }}>★</span>
+    </div>
+  );
+}
+function Timer() {
+  const [total, setTotal] = useState(0); const [left, setLeft] = useState(0); const [run, setRun] = useState(false); const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!run) return; const t = setInterval(() => setLeft((l) => {
+      if (l <= 1) { clearInterval(t); setRun(false); setDone(true); Sound.buzz(); return 0; }
+      if (l <= 6) Sound.tick(); return l - 1;
+    }), 1000); return () => clearInterval(t);
+  }, [run]);
+  const start = (s) => { setTotal(s); setLeft(s); setRun(true); setDone(false); };
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="label" style={{ color: 'var(--ink-soft)' }}>TIMER</span>
+      <button type="button" className="chip" onClick={() => start(30)}>30s</button>
+      <button type="button" className="chip" onClick={() => start(60)}>60s</button>
+      {total > 0 && (<>
+        <span className={`timer-ring text-2xl ${done ? 'timer-done' : ''}`} style={{ color: done ? 'var(--cherry)' : 'var(--ink)', minWidth: '3.2ch' }}>{done ? "TIME'S UP" : `${left}s`}</span>
+        {run ? <button type="button" className="chip" onClick={() => setRun(false)}>Pause</button>
+          : (!done && left > 0 && <button type="button" className="chip" onClick={() => setRun(true)}>Resume</button>)}
+        <div className="h-2 flex-1 rounded-full overflow-hidden" style={{ background: '#f1dcc4', minWidth: 60 }}>
+          <div className="bar" style={{ width: `${total ? (left / total) * 100 : 0}%`, transition: 'width 1s linear' }} />
+        </div>
+      </>)}
+    </div>
+  );
+}
+function VotePanel({ players, votes, setVotes }) {
+  const max = Math.max(1, ...players.map((p) => votes.t[p.id] || 0));
+  const totalVotes = Object.values(votes.t).reduce((a, b) => a + b, 0);
+  return (
+    <div className="rounded-2xl p-4" style={{ background: '#ffe6f1', boxShadow: 'inset 0 0 0 2px #ffb8d6' }}>
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        <span className="f-marquee text-sm" style={{ color: 'var(--cherry)' }}>🗳️ GROUP VOTE · tap a name for each vote ({totalVotes})</span>
+        <div className="flex gap-2">
+          <button type="button" className="chip" onClick={() => setVotes({ t: {}, revealed: false })}>Reset</button>
+          <button type="button" className="chip on" disabled={!totalVotes} onClick={() => { setVotes({ ...votes, revealed: true }); Sound.win(); boom('small'); }}>Reveal</button>
+        </div>
+      </div>
+      {!votes.revealed ? (
+        <div className="flex flex-wrap gap-2">
+          {players.map((p) => (
+            <button type="button" key={p.id} className="chip" onClick={() => { Sound.pop(); setVotes({ ...votes, t: { ...votes.t, [p.id]: (votes.t[p.id] || 0) + 1 } }); }}>
+              {p.name}{votes.t[p.id] ? ` · ${'●'.repeat(Math.min(votes.t[p.id], 6))}` : ''}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {[...players].sort((a, b) => (votes.t[b.id] || 0) - (votes.t[a.id] || 0)).map((p, i) => {
+            const v = votes.t[p.id] || 0; const win = v === max && v > 0;
+            return (
+              <div key={p.id} className="grid items-center gap-3" style={{ gridTemplateColumns: 'minmax(70px,9rem) 1fr 2.5rem' }}>
+                <span className="font-black truncate">{win ? '👑 ' : ''}{p.name}</span>
+                <div className="h-5 rounded-full overflow-hidden" style={{ background: '#fff' }}>
+                  <RevealBar pct={(v / max) * 100} delay={i * 90} />
+                </div>
+                <span className="font-black text-right" style={{ fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+              </div>
+            );
+          })}
+          <p className="text-sm font-bold" style={{ color: 'var(--ink-soft)' }}>Winners get +2 bonus points when you tap Challenge Completed.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+function RevealBar({ pct, delay }) {
+  const [w, setW] = useState(0);
+  useEffect(() => { const t = setTimeout(() => setW(pct), 60 + delay); return () => clearTimeout(t); }, [pct, delay]);
+  return <div className="bar" style={{ width: `${w}%` }} />;
+}
+
+/* =========================================================
+   SCREENS: WELCOME / SETUP / SPICE
+   ========================================================= */
+function Welcome({ photo, onPhoto, onStart, onResume, canResume, resumeInfo, onEdit }) {
+  return (
+    <main className="max-w-5xl mx-auto grid gap-8 place-items-center text-center pt-6 pb-10">
+      <div className="flex items-center gap-3 f-marquee text-xs sm:text-sm" style={{ color: 'var(--butter)', letterSpacing: '.18em' }}>
+        <span aria-hidden="true">✦ ★ ✦</span> LIVE FROM THE PARTY <span aria-hidden="true">✦ ★ ✦</span>
+      </div>
+      <div className="grid gap-3">
+        <h1 className="f-marquee chrome-text" style={{ fontSize: 'clamp(1.2rem,3.6vw,2.2rem)' }}>WELCOME TO THE</h1>
+        <h1 className="f-display gold-text leading-none" style={{ fontSize: 'clamp(3.6rem,13vw,9rem)' }}>Sakshi Show</h1>
+        <p className="f-marquee" style={{ fontSize: 'clamp(.95rem,2.6vw,1.5rem)', color: 'var(--cream)' }}>24 YEARS. <span style={{ color: 'var(--butter)' }}>FULL CHAOS.</span></p>
+      </div>
+      <div className="relative grid place-items-center">
+        <div className="absolute spin-slow" aria-hidden="true" style={{ width: 'calc(clamp(170px,30vw,260px) + 70px)', aspectRatio: '1', borderRadius: '50%', background: 'repeating-conic-gradient(from 0deg, rgba(255,224,122,.55) 0 4deg, transparent 4deg 15deg)' }} />
+        <div className="welcome-photo">
+          {photo ? <img src={photo} alt="The birthday girl, Sakshi" /> : (
+            <div className="w-full h-full grid place-items-center" style={{ color: '#3a0a1e' }}>
+              <div><div className="f-display" style={{ fontSize: 'clamp(2.6rem,6vw,3.8rem)' }}>S</div><div className="f-marquee text-xs" style={{ letterSpacing: '.12em' }}>PHOTO GOES HERE</div></div>
+            </div>
+          )}
+        </div>
+        <div className="absolute -right-6 -top-2 disco float" aria-hidden="true" />
+        <div className="absolute -left-8 bottom-2 text-4xl float" aria-hidden="true" style={{ animationDelay: '1s' }}>💖</div>
+      </div>
+      <p className="font-extrabold max-w-xl" style={{ fontSize: 'clamp(1rem,2.2vw,1.3rem)', color: 'var(--baby)' }}>"One birthday girl. Eight categories. A lifetime of iconic moments."</p>
+      <div className="flex flex-wrap justify-center gap-4">
+        <button type="button" className="btn btn-gold btn-huge pulse" onClick={onStart}>LET THE CHAOS BEGIN</button>
+        {canResume && <button type="button" className="btn btn-pink btn-big" onClick={onResume}>RESUME GAME · {resumeInfo}</button>}
+      </div>
+      <div className="flex flex-wrap justify-center gap-3">
+        <FilePick id="welcome-photo" onFile={onPhoto} className="btn btn-ghost"><Icon name="upload" size={18} /> {photo ? 'CHANGE' : 'UPLOAD'} SAKSHI'S PHOTO</FilePick>
+        <button type="button" className="btn btn-ghost" onClick={onEdit}><Icon name="pencil" size={18} /> EDIT GAME</button>
+      </div>
+      <p className="f-marquee text-xs" style={{ color: 'var(--baby)', letterSpacing: '.2em' }}>♥ 24 YEARS · FULL CHAOS · ALL LOVE ♥</p>
+    </main>
+  );
+}
+
+function Setup({ game, setGame, onNext, onBack }) {
+  const [name, setName] = useState('');
+  const players = game.players;
+  const add = () => {
+    const n = name.trim(); if (!n) return;
+    if (players.some((p) => p.name.toLowerCase() === n.toLowerCase())) { setName(''); return; }
+    setGame((g) => ({ ...g, players: [...g.players, { id: uid(), name: n.slice(0, 24), score: 0 }] })); setName(''); Sound.pop();
+  };
+  const hasSakshi = players.some((p) => p.name.trim().toLowerCase() === 'sakshi');
+  return (
+    <main className="max-w-3xl mx-auto grid gap-6 pt-4 pb-10">
+      <button type="button" className="btn btn-ghost justify-self-start" onClick={onBack}>← BACK</button>
+      <div className="text-center grid gap-2">
+        <div className="f-marquee text-sm" style={{ color: 'var(--butter)', letterSpacing: '.16em' }}>STEP 1 OF 2</div>
+        <h2 className="f-display gold-text" style={{ fontSize: 'clamp(2.4rem,7vw,4.4rem)' }}>Who's witnessing the damage?</h2>
+        <p className="font-bold" style={{ color: 'var(--baby)' }}>Add everyone playing. Turns go in this order.</p>
+      </div>
+      <div className="card p-5 sm:p-7 grid gap-5">
+        <form className="flex gap-3 flex-wrap" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <label htmlFor="player-name" className="sr-only">Player name</label>
+          <input id="player-name" className="field flex-1" style={{ minWidth: 0, fontSize: '1.15rem' }} placeholder="Player name" value={name} onChange={(e) => setName(e.target.value)} maxLength={24} autoComplete="off" />
+          <button type="submit" className="btn btn-pink" disabled={!name.trim()}><Icon name="plus" size={18} /> ADD</button>
+        </form>
+        {!hasSakshi && <button type="button" className="chip justify-self-start" onClick={() => setGame((g) => ({ ...g, players: [{ id: uid(), name: 'Sakshi', score: 0 }, ...g.players] }))}>+ Add the birthday girl (Sakshi)</button>}
+        {players.length === 0 ? (
+          <p className="text-center font-bold py-6" style={{ color: 'var(--ink-soft)' }}>No players yet. Add at least two names to start.</p>
+        ) : (
+          <ol className="grid gap-2 sm:grid-cols-2">
+            {players.map((p, i) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: i % 2 ? '#ffe6f1' : '#f3ecff' }}>
+                <span className="f-marquee text-sm w-7 text-center" style={{ color: 'var(--cherry)' }}>{i + 1}</span>
+                <span className="font-black text-lg flex-1 truncate">{p.name}{p.name.toLowerCase() === 'sakshi' ? ' 👑' : ''}</span>
+                <button type="button" className="ibtn" style={{ color: 'var(--ink)', background: '#fff' }} aria-label={`Remove ${p.name}`} onClick={() => setGame((g) => ({ ...g, players: g.players.filter((x) => x.id !== p.id) }))}><Icon name="x" size={18} /></button>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3" style={{ background: '#fff9ee', boxShadow: 'inset 0 0 0 2px #f1dcc4' }}>
+          <div>
+            <div className="font-black">Keep score</div>
+            <div className="text-sm font-bold" style={{ color: 'var(--ink-soft)' }}>+1 per completed challenge, +2 for winning a group vote. Turn off for a casual game.</div>
+          </div>
+          <Toggle id="scoring-toggle" label="Keep score" on={game.scoring} onChange={(v) => setGame((g) => ({ ...g, scoring: v }))} />
+        </div>
+      </div>
+      <button type="button" className="btn btn-gold btn-big justify-self-center" disabled={players.length < 2} onClick={onNext}>
+        {players.length < 2 ? `ADD ${2 - players.length} MORE PLAYER${players.length === 1 ? '' : 'S'}` : 'NEXT: PICK THE SPICE →'}
+      </button>
+    </main>
+  );
+}
+
+function SpicePick({ current, onPick, onBack, counts }) {
+  return (
+    <main className="max-w-5xl mx-auto grid gap-6 pt-4 pb-10">
+      <button type="button" className="btn btn-ghost justify-self-start" onClick={onBack}>← BACK</button>
+      <div className="text-center grid gap-2">
+        <div className="f-marquee text-sm" style={{ color: 'var(--butter)', letterSpacing: '.16em' }}>STEP 2 OF 2</div>
+        <h2 className="f-display gold-text" style={{ fontSize: 'clamp(2.4rem,7vw,4.4rem)' }}>How bad do we want this?</h2>
+        <p className="font-bold" style={{ color: 'var(--baby)' }}>Each level has its own challenges. You can switch mid-game.</p>
+      </div>
+      <div className="grid gap-5 md:grid-cols-3">
+        {SPICE_KEYS.map((k) => {
+          const s = SPICES[k]; const on = current === k;
+          return (
+            <button type="button" key={k} onClick={() => onPick(k)} className="text-left rounded-[28px] p-6 grid gap-3 transition-transform hover:-translate-y-1"
+              style={{ background: s.bg, color: k === 'sweet' ? '#3a0a1e' : '#fff4e3', boxShadow: on ? '0 0 0 4px #fff0b3, 0 0 0 9px #a87618, 0 20px 50px rgba(0,0,0,.45)' : '0 0 0 3px rgba(255,224,122,.4), 0 18px 40px rgba(0,0,0,.35)', border: 0, cursor: 'pointer' }}>
+              <span style={{ fontSize: '3.4rem', lineHeight: 1 }}>{s.emoji}</span>
+              <span className="f-display" style={{ fontSize: '2rem', lineHeight: 1.05 }}>{s.label}</span>
+              <span className="font-extrabold">{s.blurb}</span>
+              <span className="f-marquee text-xs" style={{ letterSpacing: '.1em', opacity: .85 }}>{counts[k]} CHALLENGES{k === 'spicy' ? ' · DEFAULT' : ''}</span>
+            </button>
+          );
+        })}
+      </div>
+    </main>
+  );
+}
+
+/* =========================================================
+   OVERLAYS
+   ========================================================= */
+function Modal({ children, onClose, wide, label }) {
+  useEffect(() => { const h = (e) => { if (e.key === 'Escape' && onClose) onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
+  return (
+    <div className="overlay overlay-in" role="dialog" aria-modal="true" aria-label={label} onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
+      <div className="w-full" style={{ maxWidth: wide ? 1080 : 640 }}>{children}</div>
+    </div>
+  );
+}
+function UnhingedWarning({ onAccept, onBack }) {
+  useEffect(() => { Sound.siren(); }, []);
+  return (
+    <div className="overlay warn-bg" role="alertdialog" aria-modal="true" aria-label="Unhinged mode warning">
+      <div className="text-center grid gap-6 max-w-3xl shake">
+        <div className="f-marquee" style={{ fontSize: 'clamp(1rem,3vw,1.6rem)', color: '#fff0b3', letterSpacing: '.2em' }}>⚠ WARNING ⚠ WARNING ⚠</div>
+        <h2 className="f-display" style={{ fontSize: 'clamp(2.6rem,9vw,6.5rem)', lineHeight: .95, color: '#fff4e3', textShadow: '0 4px 0 #3a0a1e, 0 0 40px #ff2e93' }}>Sakshi's PR team has left the chat.</h2>
+        <p className="font-black text-lg" style={{ color: '#fff4e3' }}>Bolder confessions, savage roasts, chaotic dares. Anyone can still pass, no explanations needed.</p>
+        <div className="flex flex-wrap justify-center gap-4">
+          <button type="button" className="btn btn-gold btn-big" onClick={onAccept}>UNLEASH IT 🔥</button>
+          <button type="button" className="btn btn-cream btn-big" onClick={onBack}>BACK TO SPICY</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function Leaderboard({ players, onClose, scoring }) {
+  const sorted = [...players].sort((a, b) => b.score - a.score); const top = sorted[0]?.score || 0;
+  return (
+    <Modal onClose={onClose} label="Leaderboard">
+      <div className="card p-6 sm:p-8 grid gap-5">
+        <div className="text-center"><div className="f-marquee text-sm" style={{ color: 'var(--cherry)', letterSpacing: '.14em' }}>THE STANDINGS</div><h2 className="f-display" style={{ fontSize: 'clamp(2.2rem,6vw,3.4rem)', color: 'var(--pink)' }}>Leaderboard</h2></div>
+        {!scoring && <p className="text-center font-bold" style={{ color: 'var(--ink-soft)' }}>Scoring is off for this game. Turn it on in Players to start counting.</p>}
+        <ol className="grid gap-2">
+          {sorted.map((p, i) => (
+            <li key={p.id} className="grid items-center gap-3 rounded-2xl px-4 py-3" style={{ gridTemplateColumns: '2.2rem minmax(0,1fr) 3.5rem', background: i === 0 && p.score > 0 ? 'linear-gradient(90deg,#fff0b3,#ffe07a)' : '#fff9ee', boxShadow: 'inset 0 0 0 2px #f1dcc4' }}>
+              <span className="f-marquee text-lg text-center">{i === 0 && p.score > 0 ? '👑' : i + 1}</span>
+              <div className="min-w-0"><div className="font-black text-lg truncate">{p.name}</div>
+                <div className="h-2 rounded-full overflow-hidden mt-1" style={{ background: '#f1dcc4' }}><RevealBar pct={top ? (p.score / top) * 100 : 0} delay={i * 80} /></div></div>
+              <span className="f-marquee text-2xl text-right" style={{ fontVariantNumeric: 'tabular-nums' }}>{p.score}</span>
+            </li>
+          ))}
+        </ol>
+        <button type="button" className="btn btn-pink justify-self-center" onClick={onClose}>BACK TO THE WHEEL</button>
+      </div>
+    </Modal>
+  );
+}
+function HistoryPanel({ history, onClose, cats }) {
+  const byId = Object.fromEntries(cats.map((c) => [c.id, c]));
+  return (
+    <Modal onClose={onClose} label="Challenge history">
+      <div className="panel p-5 sm:p-7 grid gap-4" style={{ maxHeight: '86vh' }}>
+        <div className="flex items-center justify-between gap-3"><h2 className="f-display gold-text" style={{ fontSize: '2.2rem' }}>The Evidence</h2><button type="button" className="ibtn" aria-label="Close" onClick={onClose}><Icon name="x" /></button></div>
+        {history.length === 0 ? <p className="font-bold" style={{ color: 'var(--baby)' }}>Nothing on record yet. Spin the wheel.</p> : (
+          <ol className="grid gap-2 scroll-y pr-1" style={{ maxHeight: '68vh' }}>
+            {history.map((h) => {
+              const c = byId[h.cat];
+              return (
+                <li key={h.id} className="row p-3 grid gap-1">
+                  <div className="flex items-center gap-2 flex-wrap text-sm font-black">
+                    <span>{c ? `${c.emoji} ${c.name}` : h.kind === 'chaos' ? '🌀 Chaos card' : 'Challenge'}</span>
+                    <span style={{ color: 'var(--butter)' }}>· {h.player}</span>
+                    <span className="tag" style={{ background: h.status === 'done' ? 'var(--butter)' : 'rgba(255,244,227,.15)', color: h.status === 'done' ? 'var(--ink)' : 'var(--cream)' }}>{h.status === 'done' ? 'DONE' : 'SKIPPED'}</span>
+                    {h.winner && <span className="tag" style={{ background: 'var(--pink)', color: '#fff' }}>VOTE: {h.winner}</span>}
+                  </div>
+                  <p className="font-bold" style={{ color: 'var(--cream)' }}>{h.text}</p>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    </Modal>
+  );
+}
+function Spotlight({ item, onDone, scoring }) {
+  return (
+    <Modal label="Sakshi Spotlight">
+      <div className="gold-card p-7 sm:p-10 text-center grid gap-5 reveal-in">
+        <div className="f-marquee text-sm" style={{ letterSpacing: '.2em' }}>✦ EVERY FIVE CHALLENGES ✦</div>
+        <h2 className="f-display" style={{ fontSize: 'clamp(2.6rem,8vw,4.6rem)', lineHeight: 1, color: 'var(--cherry)', textShadow: '0 3px 0 #fff0b3' }}>The Sakshi Spotlight</h2>
+        <div className="f-marquee text-lg">{item.title}</div>
+        <p className="challenge-text">{item.text}</p>
+        <button type="button" className="btn btn-pink btn-big justify-self-center" onClick={onDone}>{scoring ? 'DONE · EVERYONE +1' : 'DONE'}</button>
+      </div>
+    </Modal>
+  );
+}
+function Finale({ photos, finalPhoto, onContinue, onHome }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => { Sound.fanfare(); boom('big'); const t = setTimeout(() => setStep(1), 3800); return () => clearTimeout(t); }, []);
+  return (
+    <div className="overlay overlay-in" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,46,147,.9), rgba(43,5,25,.97) 70%)' }} role="dialog" aria-modal="true" aria-label="Birthday finale">
+      <div className="w-full max-w-4xl grid gap-6 text-center py-6">
+        <div className="reveal-in grid gap-2">
+          <h2 className="f-marquee chrome-text" style={{ fontSize: 'clamp(1.6rem,5vw,3.2rem)' }}>24 YEARS OF SAKSHI.</h2>
+          <h2 className="f-marquee" style={{ fontSize: 'clamp(1rem,3vw,1.8rem)', color: 'var(--butter)' }}>A LIFETIME OF CHAOS TO GO.</h2>
+          <h1 className="f-display gold-text" style={{ fontSize: 'clamp(3rem,11vw,7.5rem)', lineHeight: 1 }}>Happy Birthday, you icon.</h1>
+        </div>
+        {step === 0 ? (
+          <button type="button" className="btn btn-ghost justify-self-center" onClick={() => setStep(1)}>SHOW THE MEMORIES →</button>
+        ) : (
+          <div className="grid gap-6 reveal-in">
+            {finalPhoto && <div className="photo-frame justify-self-center w-full" style={{ maxWidth: 560, aspectRatio: '4/3', transform: 'rotate(-1.5deg)', boxShadow: '0 0 0 6px #fff4e3, 0 0 0 10px #e9b949, 0 30px 60px rgba(0,0,0,.5)' }}><FitImg src={finalPhoto} alt="Sakshi's birthday photo" /></div>}
+            {photos.length > 0 ? (
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(photos.length, 3)}, minmax(0,1fr))` }}>
+                {photos.slice(0, 9).map((src, i) => (
+                  <div key={i} className="photo-frame" style={{ transform: `rotate(${[-3, 2, -1.5, 3, -2, 1][i % 6]}deg)`, aspectRatio: photos.length === 1 ? '16/10' : '1/1' }}><FitImg src={src} alt={`Memory ${i + 1}`} /></div>
+                ))}
+              </div>
+            ) : (!finalPhoto && (
+              <div className="row p-6 font-bold" style={{ color: 'var(--baby)' }}>Add a final birthday photo and group photos in Edit Game → Photos and they'll appear here.</div>
+            ))}
+            <p className="f-display max-w-3xl justify-self-center" style={{ fontSize: 'clamp(1.4rem,3.6vw,2.4rem)', color: 'var(--cream)', lineHeight: 1.2, textWrap: 'balance' }}>"Life's a whole lot funnier, louder and better with you in it. Here's to all the chaos and memories still to come."</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <button type="button" className="btn btn-gold btn-big" onClick={onContinue}>KEEP THE CHAOS GOING</button>
+              <button type="button" className="btn btn-cream btn-big" onClick={() => boom('big')}>MORE CONFETTI 🎉</button>
+              <button type="button" className="btn btn-ghost" onClick={onHome}>BACK TO START</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   EDITOR
+   ========================================================= */
+function QuestionForm({ initial, cats, photos, addPhoto, onSave, onCancel, saveLabel = 'SAVE' }) {
+  const [q, setQ] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const id = initial.id || 'new';
+  return (
+    <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (q.text.trim()) onSave({ ...q, text: q.text.trim() }); }}>
+      <label className="label" htmlFor={`q-text-${id}`}>CHALLENGE TEXT · use {'{p}'} for the current player, {'{r}'} for a random other player</label>
+      <textarea id={`q-text-${id}`} className="field" value={q.text} onChange={(e) => setQ({ ...q, text: e.target.value })} placeholder="e.g. Recreate the Goa airport incident. Sakshi plays herself." />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-1"><label className="label" htmlFor={`q-cat-${id}`}>CATEGORY</label>
+          <select id={`q-cat-${id}`} className="field" value={q.cat} onChange={(e) => setQ({ ...q, cat: e.target.value })}>{cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}</select></div>
+        <div className="grid gap-1"><label className="label" htmlFor={`q-lvl-${id}`}>SPICE LEVEL</label>
+          <select id={`q-lvl-${id}`} className="field" value={q.lvl} onChange={(e) => setQ({ ...q, lvl: e.target.value })}>{SPICE_KEYS.map((k) => <option key={k} value={k}>{SPICES[k].emoji} {SPICES[k].label}</option>)}</select></div>
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="flex items-center gap-2 font-bold cursor-pointer"><input id={`q-vote-${id}`} type="checkbox" checked={!!q.vote} onChange={(e) => setQ({ ...q, vote: e.target.checked })} style={{ width: 20, height: 20, accentColor: '#ff2e93' }} /> Group vote</label>
+        {q.photoId && photos[q.photoId] && <img src={photos[q.photoId]} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 10, boxShadow: '0 0 0 2px #e9b949' }} />}
+        <FilePick id={`q-photo-${id}`} className="btn btn-ghost" onFile={async (f) => { setBusy(true); const pid = await addPhoto(f); setBusy(false); if (pid) setQ((s) => ({ ...s, photoId: pid })); }}><Icon name="image" size={16} /> {busy ? 'SAVING…' : q.photoId ? 'CHANGE PHOTO' : 'ATTACH PHOTO'}</FilePick>
+        {q.photoId && <button type="button" className="btn btn-ghost" onClick={() => setQ({ ...q, photoId: null })}>REMOVE PHOTO</button>}
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <button type="submit" className="btn btn-gold" disabled={!q.text.trim()}><Icon name="check" size={16} /> {saveLabel}</button>
+        {onCancel && <button type="button" className="btn btn-ghost" onClick={onCancel}>CANCEL</button>}
+      </div>
+    </form>
+  );
+}
+
+function Editor({ config, setConfig, photos, addPhoto, removePhoto, game, setGame, onClose, toast, importPhotos, clearPhotos }) {
+  const [tab, setTab] = useState('questions');
+  const cats = config.categories;
+  return (
+    <Modal onClose={onClose} wide label="Edit game">
+      <div className="panel p-4 sm:p-6 grid gap-4" style={{ maxHeight: 'calc(100vh - 32px)', gridTemplateRows: 'auto auto minmax(0,1fr)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="f-display gold-text" style={{ fontSize: 'clamp(1.9rem,5vw,2.8rem)' }}>Edit Game</h2>
+          <button type="button" className="btn btn-pink" onClick={onClose}><Icon name="check" size={16} /> DONE</button>
+        </div>
+        <div className="flex flex-wrap gap-2" role="tablist">
+          {[['questions', `Challenges (${config.questions.length})`], ['categories', `Categories (${cats.length})`], ['photos', 'Photos'], ['data', 'Save & Share']].map(([k, l]) => (
+            <button type="button" role="tab" aria-selected={tab === k} key={k} className={`tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>{l}</button>
+          ))}
+        </div>
+        <div className="scroll-y pr-1" style={{ minHeight: 0 }}>
+          {tab === 'questions' && <QuestionsTab config={config} setConfig={setConfig} photos={photos} addPhoto={addPhoto} toast={toast} />}
+          {tab === 'categories' && <CategoriesTab config={config} setConfig={setConfig} photos={photos} addPhoto={addPhoto} toast={toast} />}
+          {tab === 'photos' && <PhotosTab config={config} setConfig={setConfig} photos={photos} addPhoto={addPhoto} removePhoto={removePhoto} />}
+          {tab === 'data' && <DataTab config={config} setConfig={setConfig} photos={photos} game={game} setGame={setGame} toast={toast} importPhotos={importPhotos} clearPhotos={clearPhotos} />}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function QuestionsTab({ config, setConfig, photos, addPhoto, toast }) {
+  const cats = config.categories;
+  const [fCat, setFCat] = useState('all'); const [fLvl, setFLvl] = useState('all'); const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState(null); const [confirmDel, setConfirmDel] = useState(null); const [adding, setAdding] = useState(false);
+  const byId = Object.fromEntries(cats.map((c) => [c.id, c]));
+  const list = config.questions.filter((q) => (fCat === 'all' || q.cat === fCat) && (fLvl === 'all' || q.lvl === fLvl) && (!search || q.text.toLowerCase().includes(search.toLowerCase())));
+  const ordered = [...list].sort((a, b) => (b.origin === 'custom') - (a.origin === 'custom'));
+  const save = (q) => { setConfig((c) => ({ ...c, questions: c.questions.map((x) => (x.id === q.id ? q : x)) })); setEditing(null); toast('Challenge saved.'); };
+  const add = (q) => { setConfig((c) => ({ ...c, questions: [{ ...q, id: 'c-' + uid(), origin: 'custom' }, ...c.questions] })); setAdding(false); toast('Added. It goes into the pool straight away.'); };
+  const del = (id) => { setConfig((c) => ({ ...c, questions: c.questions.filter((x) => x.id !== id) })); setConfirmDel(null); toast('Challenge deleted.'); };
+  return (
+    <div className="grid gap-4">
+      {adding ? (
+        <div className="row p-4"><QuestionForm initial={{ text: '', cat: fCat !== 'all' ? fCat : cats[0]?.id, lvl: fLvl !== 'all' ? fLvl : config.spice, vote: false, photoId: null }} cats={cats} photos={photos} addPhoto={addPhoto} onSave={add} onCancel={() => setAdding(false)} saveLabel="ADD CHALLENGE" /></div>
+      ) : (
+        <button type="button" className="btn btn-gold justify-self-start" disabled={!cats.length} onClick={() => setAdding(true)}><Icon name="plus" size={16} /> ADD YOUR OWN CHALLENGE</button>
+      )}
+      <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr]">
+        <select id="filter-cat" aria-label="Filter by category" className="field" value={fCat} onChange={(e) => setFCat(e.target.value)}><option value="all">All categories</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}</select>
+        <select id="filter-lvl" aria-label="Filter by spice" className="field" value={fLvl} onChange={(e) => setFLvl(e.target.value)}><option value="all">All spice levels</option>{SPICE_KEYS.map((k) => <option key={k} value={k}>{SPICES[k].emoji} {SPICES[k].label}</option>)}</select>
+        <input id="filter-search" aria-label="Search challenges" className="field" placeholder="Search challenges…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+      <div className="text-sm font-bold" style={{ color: 'var(--baby)' }}>Showing {list.length} of {config.questions.length}. Your own challenges are listed first.</div>
+      <ul className="grid gap-2">
+        {ordered.slice(0, 400).map((q) => {
+          const c = byId[q.cat];
+          return (
+            <li key={q.id} className="row p-3">
+              {editing === q.id ? (
+                <QuestionForm initial={q} cats={cats} photos={photos} addPhoto={addPhoto} onSave={save} onCancel={() => setEditing(null)} />
+              ) : (
+                <div className="flex gap-3 items-start">
+                  <div className="flex-1 min-w-0 grid gap-1.5">
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <span className="tag" style={{ background: c ? c.color : '#666', color: c ? textOn(c.color) : '#fff' }}>{c ? `${c.emoji} ${c.short || c.name}` : 'NO CATEGORY'}</span>
+                      <span className="tag" style={{ background: 'rgba(255,244,227,.12)', color: 'var(--cream)' }}>{SPICES[q.lvl]?.emoji} {q.lvl.toUpperCase()}</span>
+                      {q.vote && <span className="tag" style={{ background: 'var(--lav)', color: 'var(--ink)' }}>VOTE</span>}
+                      {q.origin === 'custom' && <span className="tag" style={{ background: 'var(--butter)', color: 'var(--ink)' }}>YOURS</span>}
+                      {q.photoId && <span className="tag" style={{ background: 'var(--baby)', color: 'var(--ink)' }}>📸 PHOTO</span>}
+                    </div>
+                    <p className="font-bold" style={{ color: 'var(--cream)' }}>{q.text}</p>
+                  </div>
+                  <div className="flex gap-2 flex-none">
+                    {confirmDel === q.id ? (<>
+                      <button type="button" className="btn btn-pink" style={{ padding: '.6em .9em', fontSize: '.8rem' }} onClick={() => del(q.id)}>DELETE</button>
+                      <button type="button" className="ibtn" aria-label="Keep it" onClick={() => setConfirmDel(null)}><Icon name="x" /></button>
+                    </>) : (<>
+                      <button type="button" className="ibtn" aria-label="Edit challenge" onClick={() => setEditing(q.id)}><Icon name="pencil" /></button>
+                      <button type="button" className="ibtn" aria-label="Delete challenge" onClick={() => setConfirmDel(q.id)}><Icon name="trash" /></button>
+                    </>)}
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {list.length === 0 && <p className="font-bold" style={{ color: 'var(--baby)' }}>No challenges match. Add one above.</p>}
+    </div>
+  );
+}
+
+function CategoriesTab({ config, setConfig, photos, addPhoto, toast }) {
+  const cats = config.categories; const [confirmDel, setConfirmDel] = useState(null);
+  const upd = (id, patch) => setConfig((c) => ({ ...c, categories: c.categories.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+  const enabledCount = cats.filter((c) => c.enabled).length;
+  const counts = (id) => SPICE_KEYS.map((k) => config.questions.filter((q) => q.cat === id && q.lvl === k).length);
+  const addCat = () => {
+    const palette = ['#ff2e93', '#b79cff', '#ffe07a', '#d7193f', '#ffb8d6', '#e2a93b', '#7e5bef', '#ff7f6e'];
+    setConfig((c) => ({ ...c, categories: [...c.categories, { id: 'cat-' + uid(), emoji: '✨', name: 'New Category', short: 'New', theme: '', color: palette[c.categories.length % palette.length], enabled: true, photoId: null, origin: 'custom' }] }));
+    toast('Category added at the bottom. Rename it and add challenges.');
+  };
+  const delCat = (id) => {
+    setConfig((c) => ({ ...c, categories: c.categories.filter((x) => x.id !== id), questions: c.questions.filter((q) => q.cat !== id) }));
+    setConfirmDel(null); toast('Category and its challenges deleted.');
+  };
+  return (
+    <div className="grid gap-3">
+      <p className="font-bold text-sm" style={{ color: 'var(--baby)' }}>Changes apply instantly. The wheel shows enabled categories only; up to 12 fit comfortably. {enabledCount > 12 && <strong style={{ color: 'var(--butter)' }}>You have {enabledCount} enabled, so labels will be small.</strong>}</p>
+      {cats.map((c) => {
+        const [s, p, u] = counts(c.id);
+        return (
+          <div key={c.id} className="row p-4 grid gap-3" style={{ opacity: c.enabled ? 1 : .6 }}>
+            <div className="grid gap-3 items-end" style={{ gridTemplateColumns: '4rem minmax(0,1fr)' }}>
+              <div className="grid gap-1"><label className="label" htmlFor={`cat-emoji-${c.id}`}>ICON</label><input id={`cat-emoji-${c.id}`} className="field text-center text-xl" value={c.emoji} maxLength={4} onChange={(e) => upd(c.id, { emoji: e.target.value })} /></div>
+              <div className="grid gap-1"><label className="label" htmlFor={`cat-name-${c.id}`}>NAME</label><input id={`cat-name-${c.id}`} className="field" value={c.name} maxLength={40} onChange={(e) => upd(c.id, { name: e.target.value })} /></div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] items-end">
+              <div className="grid gap-1"><label className="label" htmlFor={`cat-short-${c.id}`}>WHEEL LABEL (SHORT)</label><input id={`cat-short-${c.id}`} className="field" value={c.short || ''} maxLength={16} onChange={(e) => upd(c.id, { short: e.target.value })} /></div>
+              <div className="grid gap-1"><label className="label" htmlFor={`cat-color-${c.id}`}>COLOUR</label><input id={`cat-color-${c.id}`} type="color" value={c.color} onChange={(e) => upd(c.id, { color: e.target.value })} style={{ width: 64, height: 44, border: 0, borderRadius: 12, background: 'transparent', cursor: 'pointer' }} /></div>
+              <div className="flex items-center gap-2 pb-2"><Toggle id={`cat-on-${c.id}`} label={`Enable ${c.name}`} on={c.enabled} onChange={(v) => upd(c.id, { enabled: v })} /><span className="font-bold text-sm">{c.enabled ? 'On wheel' : 'Hidden'}</span></div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div style={{ width: 72, height: 54, borderRadius: 12, overflow: 'hidden', boxShadow: '0 0 0 2px #e9b949' }}>{c.photoId && photos[c.photoId] ? <img src={photos[c.photoId]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Placeholder cat={c} small />}</div>
+              <FilePick id={`cat-photo-${c.id}`} className="btn btn-ghost" onFile={async (f) => { const pid = await addPhoto(f); if (pid) upd(c.id, { photoId: pid }); }}><Icon name="image" size={16} /> {c.photoId ? 'CHANGE' : 'ADD'} REVEAL PHOTO</FilePick>
+              {c.photoId && <button type="button" className="btn btn-ghost" onClick={() => upd(c.id, { photoId: null })}>REMOVE</button>}
+              <span className="text-sm font-bold flex-1" style={{ color: 'var(--baby)' }}>🌸 {s} · 🌶️ {p} · 🔥 {u}</span>
+              {confirmDel === c.id ? (
+                <span className="flex items-center gap-2"><span className="text-sm font-bold">Delete with its {s + p + u} challenges?</span><button type="button" className="btn btn-pink" style={{ padding: '.6em .9em', fontSize: '.8rem' }} onClick={() => delCat(c.id)}>DELETE</button><button type="button" className="ibtn" aria-label="Keep category" onClick={() => setConfirmDel(null)}><Icon name="x" /></button></span>
+              ) : (
+                <button type="button" className="ibtn" aria-label={`Delete ${c.name}`} disabled={cats.length <= 1} onClick={() => setConfirmDel(c.id)}><Icon name="trash" /></button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <button type="button" className="btn btn-gold justify-self-start" onClick={addCat}><Icon name="plus" size={16} /> NEW CATEGORY</button>
+    </div>
+  );
+}
+
+function PhotoSlot({ id, label, hint, src, onUpload, onRemove, square }) {
+  return (
+    <div className="row p-4 grid gap-3 content-start">
+      <div><div className="label">{label}</div>{hint && <div className="text-xs font-bold mt-1" style={{ color: 'var(--baby)' }}>{hint}</div>}</div>
+      <div className="photo-frame" style={{ aspectRatio: square ? '1/1' : '4/3', maxWidth: square ? 200 : 280 }}>{src ? <FitImg src={src} alt={label} /> : <Placeholder small />}</div>
+      <div className="flex gap-2 flex-wrap"><FilePick id={id} onFile={onUpload}><Icon name="upload" size={16} /> {src ? 'CHANGE' : 'UPLOAD'}</FilePick>{src && <button type="button" className="btn btn-ghost" onClick={onRemove}>REMOVE</button>}</div>
+    </div>
+  );
+}
+
+function PhotosTab({ config, setConfig, photos, addPhoto, removePhoto }) {
+  const totalKb = Object.values(photos).reduce((a, s) => a + kb(s), 0);
+  const albums = config.albums || { expressions: [], nights: [], group: [] };
+  const setSingle = (key) => async (f) => { const id = await addPhoto(f); if (id) setConfig((c) => ({ ...c, [key]: id })); };
+  const clearSingle = (key) => () => { const old = config[key]; setConfig((c) => ({ ...c, [key]: null })); if (old) removePhoto(old); };
+  const addToAlbum = (key) => async (f) => { const id = await addPhoto(f); if (id) setConfig((c) => ({ ...c, albums: { ...(c.albums || {}), [key]: [...((c.albums || {})[key] || []), id].slice(-12) } })); };
+  const removeFromAlbum = (key, id) => { setConfig((c) => ({ ...c, albums: { ...(c.albums || {}), [key]: ((c.albums || {})[key] || []).filter((x) => x !== id) } })); removePhoto(id); };
+  const pct = Math.min(100, (totalKb / 1024 / 50) * 100);
+  return (
+    <div className="grid gap-4">
+      <div className="row p-4 grid gap-2">
+        <div className="flex justify-between gap-3 flex-wrap text-sm font-bold"><span>Photos are shrunk automatically and stay in this browser only.</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{(totalKb / 1024).toFixed(1)} MB used · {Object.keys(photos).length} photos</span></div>
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,244,227,.15)' }}><div className="bar" style={{ width: `${pct}%` }} /></div>
+        <div className="text-xs font-bold" style={{ color: 'var(--baby)' }}>Most browsers comfortably hold 50 MB or more. Per-category photos live in the Categories tab; per-challenge photos in the Challenges tab.</div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <PhotoSlot id="main-photo" square label="MAIN SAKSHI PORTRAIT" hint="Welcome screen and the centre of the wheel" src={config.mainPhotoId && photos[config.mainPhotoId]} onUpload={setSingle('mainPhotoId')} onRemove={clearSingle('mainPhotoId')} />
+        <PhotoSlot id="final-photo" label="FINAL BIRTHDAY PHOTO" hint="The big photo in the 24-challenge finale" src={config.finalPhotoId && photos[config.finalPhotoId]} onUpload={setSingle('finalPhotoId')} onRemove={clearSingle('finalPhotoId')} />
+        <PhotoSlot id="bg-photo-pick" label="PARTY BACKGROUND" hint="Shown faintly behind everything" src={config.bgPhotoId && photos[config.bgPhotoId]} onUpload={setSingle('bgPhotoId')} onRemove={clearSingle('bgPhotoId')} />
+      </div>
+      {ALBUMS.map((al) => {
+        const ids = (albums[al.key] || []).filter((id) => photos[id]);
+        return (
+          <div key={al.key} className="row p-4 grid gap-3">
+            <div><div className="label">{al.label.toUpperCase()} · {ids.length}/12</div><div className="text-xs font-bold mt-1" style={{ color: 'var(--baby)' }}>{al.hint}</div></div>
+            {ids.length > 0 && (
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(104px,1fr))' }}>
+                {ids.map((id) => (
+                  <div key={id} className="relative"><div className="photo-frame" style={{ aspectRatio: '1/1' }}><FitImg src={photos[id]} alt={al.label} /></div>
+                    <button type="button" className="ibtn absolute" style={{ top: 6, right: 6, background: 'rgba(43,5,25,.8)' }} aria-label="Remove photo" onClick={() => removeFromAlbum(al.key, id)}><Icon name="x" size={16} /></button></div>
+                ))}
+              </div>
+            )}
+            <FilePick id={`album-${al.key}`} multiple className="btn btn-cream justify-self-start" onFile={addToAlbum(al.key)}><Icon name="upload" size={16} /> ADD PHOTOS</FilePick>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DataTab({ config, setConfig, photos, game, setGame, toast, importPhotos, clearPhotos }) {
+  const [withPhotos, setWithPhotos] = useState(true); const [withProgress, setWithProgress] = useState(true);
+  const [exportText, setExportText] = useState(''); const [importText, setImportText] = useState(''); const [confirm, setConfirm] = useState(null);
+  const fileRef = useRef(null); const exportRef = useRef(null);
+  const makeExport = () => {
+    const usedIds = new Set([config.mainPhotoId, config.bgPhotoId, config.finalPhotoId, ...(config.finalePhotoIds || []), ...Object.values(config.albums || {}).flat(), ...config.categories.map((c) => c.photoId), ...config.questions.map((q) => q.photoId)].filter(Boolean));
+    const ph = {}; if (withPhotos) usedIds.forEach((id) => { if (photos[id]) ph[id] = photos[id]; });
+    const data = { app: 'wheel-of-sakshi', version: 1, exportedAt: new Date().toISOString(), config, photos: ph, game: withProgress ? game : undefined };
+    setExportText(JSON.stringify(data));
+  };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(exportText); toast('Copied. Paste it into a note or a .json file to keep it safe.'); }
+    catch (e) { if (exportRef.current) { exportRef.current.focus(); exportRef.current.select(); } toast('Text selected. Press Ctrl/Cmd + C to copy.'); }
+  };
+  const doImport = async (text) => {
+    try {
+      const d = JSON.parse(text);
+      const cfg = d.config || d;
+      if (!Array.isArray(cfg.categories) || !Array.isArray(cfg.questions)) throw new Error('This file has no categories or challenges in it.');
+      if (d.photos && Object.keys(d.photos).length) await importPhotos(d.photos);
+      setConfig(migrateConfig({ ...defaultConfig(), ...cfg }));
+      if (d.game && Array.isArray(d.game.players)) setGame({ ...freshGame(), ...d.game });
+      setImportText(''); toast(`Imported ${cfg.questions.length} challenges and ${cfg.categories.length} categories.`);
+    } catch (e) { toast(`Import failed: ${e.message || 'the text is not valid game data.'} Check you pasted the whole export.`, true); }
+  };
+  const restoreDefaults = () => {
+    setConfig((c) => {
+      const custom = c.questions.filter((q) => q.origin === 'custom');
+      const catIds = new Set(c.categories.map((x) => x.id));
+      const missing = defaultCats().filter((x) => !catIds.has(x.id));
+      return { ...c, categories: [...c.categories, ...missing], questions: [...custom, ...buildDefaultQuestions()] };
+    }); setConfirm(null); toast('Default challenges restored. Your own challenges, categories and photos were kept.');
+  };
+  const factory = async () => { await clearPhotos(); setConfig(defaultConfig()); setGame(freshGame()); setConfirm(null); toast('Everything reset to factory settings.'); };
+  const Confirm = ({ id, label, action, danger }) => confirm === id ? (
+    <span className="flex gap-2 items-center flex-wrap"><span className="font-bold text-sm">Sure?</span><button type="button" className="btn btn-pink" onClick={action}>YES, {label}</button><button type="button" className="btn btn-ghost" onClick={() => setConfirm(null)}>NO</button></span>
+  ) : <button type="button" className={danger ? 'btn btn-ghost' : 'btn btn-cream'} onClick={() => setConfirm(id)}>{label}</button>;
+  return (
+    <div className="grid gap-4">
+      <div className="row p-4 grid gap-3">
+        <div className="f-marquee" style={{ color: 'var(--butter)' }}>AUTOSAVE IS ON</div>
+        <p className="font-bold text-sm" style={{ color: 'var(--cream)' }}>Every edit, score and spin saves to this browser automatically. Refreshing the page keeps your progress. To move the game to another device, export it here and import it there.</p>
+      </div>
+      <div className="row p-4 grid gap-3">
+        <div className="f-marquee" style={{ color: 'var(--butter)' }}>EXPORT</div>
+        <div className="flex gap-5 flex-wrap font-bold text-sm">
+          <label className="flex items-center gap-2 cursor-pointer"><input id="exp-photos" type="checkbox" checked={withPhotos} onChange={(e) => setWithPhotos(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#ff2e93' }} /> Include photos (complete backup, bigger file)</label>
+          <label className="flex items-center gap-2 cursor-pointer"><input id="exp-progress" type="checkbox" checked={withProgress} onChange={(e) => setWithProgress(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#ff2e93' }} /> Include game progress</label>
+        </div>
+        <div className="flex gap-2 flex-wrap"><button type="button" className="btn btn-gold" onClick={makeExport}>CREATE EXPORT</button>{exportText && <button type="button" className="btn btn-cream" onClick={copy}><Icon name="copy" size={16} /> COPY ({Math.round(exportText.length / 1024)} KB)</button>}</div>
+        {exportText && <textarea id="export-text" ref={exportRef} readOnly className="field" style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.75rem', minHeight: 110 }} value={exportText} onFocus={(e) => e.target.select()} />}
+      </div>
+      <div className="row p-4 grid gap-3">
+        <div className="f-marquee" style={{ color: 'var(--butter)' }}>IMPORT</div>
+        <p className="font-bold text-sm" style={{ color: 'var(--cream)' }}>Paste an export below or choose a .json file. This replaces the current categories and challenges.</p>
+        <textarea id="import-text" className="field" placeholder='Paste export text here ({"app":"wheel-of-sakshi", …})' value={importText} onChange={(e) => setImportText(e.target.value)} style={{ fontFamily: 'ui-monospace, monospace', fontSize: '.8rem' }} />
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" className="btn btn-gold" disabled={!importText.trim()} onClick={() => doImport(importText)}>IMPORT PASTED TEXT</button>
+          <input id="import-file" ref={fileRef} type="file" accept=".json,application/json,text/plain" className="hidden-input" onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => doImport(String(r.result)); r.readAsText(f); }} />
+          <button type="button" className="btn btn-cream" onClick={() => fileRef.current && fileRef.current.click()}><Icon name="upload" size={16} /> CHOOSE FILE</button>
+        </div>
+      </div>
+      <div className="row p-4 grid gap-3">
+        <div className="f-marquee" style={{ color: 'var(--butter)' }}>RESET</div>
+        <div className="flex gap-3 flex-wrap items-center"><Confirm id="defaults" label="RESTORE DEFAULT CHALLENGES" action={restoreDefaults} /><span className="text-sm font-bold" style={{ color: 'var(--baby)' }}>Brings back the built-in challenges. Your own challenges, categories and photos stay.</span></div>
+        <div className="flex gap-3 flex-wrap items-center"><Confirm id="progress" label="RESET GAME PROGRESS" action={() => { setGame((g) => ({ ...freshGame(), players: g.players.map((p) => ({ ...p, score: 0 })), scoring: g.scoring })); setConfirm(null); toast('Scores, history and counters cleared. Players kept.'); }} /><span className="text-sm font-bold" style={{ color: 'var(--baby)' }}>Clears scores, spins, history and the used-question list.</span></div>
+        <div className="flex gap-3 flex-wrap items-center"><Confirm id="factory" label="FACTORY RESET EVERYTHING" danger action={factory} /><span className="text-sm font-bold" style={{ color: 'var(--baby)' }}>Deletes your challenges, categories, photos and progress.</span></div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   GAME SCREEN
+   ========================================================= */
+function GameScreen({ config, setConfig, game, setGame, photos, openEditor, goHome, toast, overlayActive }) {
+  const cats = config.categories.filter((c) => c.enabled);
+  const rotorRef = useRef(null); const rotRef = useRef(0); const rafRef = useRef(0); const liveRef = useRef(null); const cardRef = useRef(null);
+  const [phase, setPhase] = useState('idle'); const [reveal, setReveal] = useState(null);
+  const [votes, setVotes] = useState({ t: {}, revealed: false }); const [performer, setPerformer] = useState(null);
+  const [overlay, setOverlay] = useState(null); const [pendingSpice, setPendingSpice] = useState(null);
+  const gameRef = useRef(game); gameRef.current = game;
+  const configRef = useRef(config); configRef.current = config;
+  const players = game.players; const cur = players.length ? players[game.turn % players.length] : null;
+  const catById = Object.fromEntries(config.categories.map((c) => [c.id, c]));
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  useEffect(() => { if (liveRef.current && phase === 'idle') liveRef.current.textContent = ''; }, [phase]);
+
+  const draw = (catId) => {
+    const cfg = configRef.current; const g = gameRef.current;
+    let pool = cfg.questions.filter((q) => q.cat === catId && q.lvl === cfg.spice); let lvlKey = cfg.spice; let fallback = false;
+    if (!pool.length) { pool = cfg.questions.filter((q) => q.cat === catId); lvlKey = 'any'; fallback = true; }
+    if (!pool.length) return { empty: true };
+    const key = `${catId}|${lvlKey}`; let used = new Set(g.played[key] || []);
+    let avail = pool.filter((q) => !used.has(q.id)); let reshuffled = false;
+    if (!avail.length) { used = new Set(); avail = pool; reshuffled = true; }
+    const q = pick(avail); used.add(q.id);
+    const ng = { ...g, played: { ...g.played, [key]: [...used] } }; gameRef.current = ng; setGame(ng);
+    return { q, reshuffled, fallback, left: avail.length - 1, total: pool.length };
+  };
+
+  const buildReveal = (cat, { forceNormal = false } = {}) => {
+    const g = gameRef.current; const ps = g.players; const c = ps[g.turn % ps.length];
+    const others = ps.filter((p) => p.id !== c.id); const rName = (others.length ? pick(others) : c).name;
+    const roll = Math.random();
+    if (!forceNormal && g.spins >= 3 && roll < 0.09) { const ch = pick(CHAOS); return { kind: 'chaos', cat, title: ch.title, text: fill(ch.text, c.name, rName) }; }
+    const d = draw(cat.id); if (d.empty) return { kind: 'empty', cat };
+    const queen = !forceNormal && roll >= 0.09 && roll < 0.19 && ps.length > 2;
+    return { kind: 'challenge', cat, q: d.q, vote: !!d.q.vote, queen, reshuffled: d.reshuffled, fallback: d.fallback, left: d.left, total: d.total, text: fill(d.q.text, queen ? "Sakshi's chosen one" : c.name, rName) };
+  };
+
+  const land = (idx) => {
+    const cat = cats[idx]; setPhase('revealed'); setVotes({ t: {}, revealed: false }); setPerformer(null);
+    const r = buildReveal(cat); r.photoId = pickRevealPhoto(configRef.current, photos, cat, r.q); setReveal(r);
+    if (r.kind === 'chaos') { Sound.chaos(); boom('small'); }
+    else if (r.queen) { Sound.gold(); boom('gold'); }
+    else { Sound.win(); boom('small'); }
+    if (r.reshuffled) toast(`You've played every ${SPICES[configRef.current.spice].label} challenge in ${cat.name}. Reshuffled.`);
+    if (r.fallback) toast(`${cat.name} has no ${SPICES[configRef.current.spice].label} challenges, so this one is from another level.`);
+    setTimeout(() => { if (cardRef.current && window.innerWidth < 1024) cardRef.current.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); }, 250);
+  };
+
+  const spin = () => {
+    if (phase === 'spinning' || !cats.length || !cur) return;
+    Sound.unlock(); setReveal(null); setPhase('spinning');
+    const n = cats.length; const seg = 360 / n; const reduce = prefersReduced();
+    const target = Math.floor(Math.random() * n);
+    const landA = target * seg + seg * (0.5 + (Math.random() - 0.5) * 0.72);
+    const desired = mod(360 - landA, 360); const start = rotRef.current; let delta = desired - mod(start, 360); if (delta < 0) delta += 360;
+    const end = start + (reduce ? 1 : 5 + Math.floor(Math.random() * 3)) * 360 + delta;
+    const dur = reduce ? 1200 : 5000 + Math.random() * 1000; const t0 = performance.now();
+    let last = indexAt(start, n); const ease = (t) => 1 - Math.pow(1 - t, 4);
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / dur); const d = start + (end - start) * ease(t); rotRef.current = d;
+      if (rotorRef.current) rotorRef.current.setAttribute('transform', `rotate(${d})`);
+      const i = indexAt(d, n);
+      if (i !== last) { last = i; if (configRef.current.sound) Sound.tick(); if (liveRef.current) liveRef.current.textContent = `${cats[i].emoji} ${cats[i].name}`; }
+      if (t < 1) rafRef.current = requestAnimationFrame(step); else land(indexAt(end, n));
+    };
+    rafRef.current = requestAnimationFrame(step);
+    setGame((g) => { const ng = { ...g, spins: g.spins + 1 }; gameRef.current = ng; return ng; });
+  };
+
+  const newChallenge = () => {
+    if (!reveal) return; const r = buildReveal(reveal.cat, { forceNormal: true }); r.photoId = pickRevealPhoto(configRef.current, photos, reveal.cat, r.q); setReveal(r); setVotes({ t: {}, revealed: false }); setPerformer(null); Sound.pop();
+    if (r.reshuffled) toast('Pool used up, reshuffled.');
+  };
+
+  const voteWinners = () => { const vals = Object.values(votes.t); if (!vals.length) return []; const m = Math.max(...vals); return m > 0 ? Object.keys(votes.t).filter((id) => votes.t[id] === m) : []; };
+
+  const finish = (status) => {
+    if (!reveal || reveal.kind === 'empty') { setReveal(null); setPhase('idle'); return; }
+    const g = gameRef.current; const ps = g.players; const c = ps[g.turn % ps.length];
+    const perfId = reveal.queen && performer ? performer : c.id; const perf = ps.find((p) => p.id === perfId) || c;
+    const winners = status === 'done' && reveal.vote && votes.revealed ? voteWinners() : [];
+    const pts = {};
+    if (status === 'done' && g.scoring) { pts[perfId] = 1; winners.forEach((id) => { pts[id] = (pts[id] || 0) + 2; }); }
+    const completed = g.completed + (status === 'done' ? 1 : 0);
+    const entry = { id: uid(), at: Date.now(), kind: reveal.kind, cat: reveal.cat?.id, player: perf.name, text: reveal.kind === 'chaos' ? `${reveal.title}: ${reveal.text}` : reveal.text, status, winner: winners.map((id) => ps.find((p) => p.id === id)?.name).filter(Boolean).join(' & ') || null };
+    let ng = { ...g, players: ps.map((p) => ({ ...p, score: p.score + (pts[p.id] || 0) })), completed, turn: (g.turn + 1) % ps.length, history: [entry, ...g.history].slice(0, 300) };
+    setReveal(null); setPhase('idle'); Sound.pop();
+    if (status === 'done') {
+      if (completed === 24 && !g.finaleShown) { ng = { ...ng, finaleShown: true }; setOverlay({ type: 'finale' }); }
+      else if (completed % 5 === 0) { setOverlay({ type: 'spotlight', item: pick(SPOTLIGHTS) }); Sound.gold(); boom('gold'); }
+      else if (g.scoring && completed % 6 === 0) setOverlay({ type: 'leaderboard' });
+    }
+    gameRef.current = ng; setGame(ng);
+  };
+
+  const spotlightDone = () => {
+    if (gameRef.current.scoring) setGame((g) => ({ ...g, players: g.players.map((p) => ({ ...p, score: p.score + 1 })), history: [{ id: uid(), at: Date.now(), kind: 'spotlight', player: 'Everyone', text: `Sakshi Spotlight: ${overlay.item.text}`, status: 'done' }, ...g.history] }));
+    setOverlay(null);
+  };
+
+  const changeSpice = (k) => {
+    if (k === config.spice) return;
+    if (k === 'unhinged') { setPendingSpice('unhinged'); return; }
+    setConfig((c) => ({ ...c, spice: k })); toast(`${SPICES[k].emoji} ${SPICES[k].label} activated.`);
+  };
+  const fullscreen = async () => {
+    try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); else await document.exitFullscreen(); }
+    catch (e) { toast("Fullscreen isn't available here. Try your browser's own fullscreen (F11 on most laptops).", true); }
+  };
+  useEffect(() => {
+    const h = (e) => {
+      if (overlay || pendingSpice || overlayActive) return;
+      const tag = (e.target && e.target.tagName) || ''; if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tag)) return;
+      if (e.code === 'Space' && phase === 'idle') { e.preventDefault(); spin(); }
+    };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  });
+
+  const hubPhoto = config.mainPhotoId ? photos[config.mainPhotoId] : null;
+  const revealPhoto = reveal && reveal.photoId ? photos[reveal.photoId] || null : null;
+  const spice = SPICES[config.spice];
+
+  return (
+    <div className={`max-w-[1400px] mx-auto grid gap-4 ${config.bigText ? 'big-text' : ''}`}>
+      {/* Top bar */}
+      <header className="flex items-center gap-3 flex-wrap justify-between">
+        <button type="button" onClick={goHome} className="flex items-center gap-2 bg-transparent border-0 cursor-pointer p-0" aria-label="Back to the welcome screen">
+          <span className="f-display gold-text" style={{ fontSize: 'clamp(1.5rem,3vw,2.1rem)', lineHeight: 1 }}>Wheel of Sakshi</span>
+        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="pill" style={{ fontVariantNumeric: 'tabular-nums' }}>🎡 {game.spins} spins</span>
+          <span className="pill" style={{ fontVariantNumeric: 'tabular-nums' }}>✅ {game.completed}{game.completed < 24 ? ` / 24 to finale` : ' · finale unlocked'}</span>
+          <div className="flex rounded-full p-1 gap-1" style={{ background: 'rgba(255,244,227,.08)', boxShadow: 'inset 0 0 0 1.5px var(--line)' }} role="radiogroup" aria-label="Spice level">
+            {SPICE_KEYS.map((k) => (
+              <button type="button" role="radio" aria-checked={config.spice === k} key={k} title={SPICES[k].label} onClick={() => changeSpice(k)} disabled={phase === 'spinning'}
+                className="rounded-full border-0 cursor-pointer font-black text-sm px-3 py-1.5" style={{ background: config.spice === k ? SPICES[k].bg : 'transparent', color: config.spice === k && k === 'sweet' ? '#3a0a1e' : '#fff4e3' }}>
+                {SPICES[k].emoji}<span className="hidden sm:inline"> {k === 'sweet' ? 'Sweet' : k === 'spicy' ? 'Spicy' : 'Unhinged'}</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="ibtn" title="Leaderboard" aria-label="Leaderboard" onClick={() => setOverlay({ type: 'leaderboard' })}><Icon name="trophy" /></button>
+          <button type="button" className="ibtn" title="History" aria-label="Challenge history" onClick={() => setOverlay({ type: 'history' })}><Icon name="history" /></button>
+          <button type="button" className="ibtn" title="Players" aria-label="Edit players" onClick={() => setOverlay({ type: 'players' })}><Icon name="users" /></button>
+          <button type="button" className="ibtn" title={config.sound ? 'Mute' : 'Sound on'} aria-label={config.sound ? 'Mute sounds' : 'Turn sounds on'} onClick={() => setConfig((c) => ({ ...c, sound: !c.sound }))}><Icon name={config.sound ? 'vol' : 'mute'} /></button>
+          <button type="button" className="ibtn" title="Bigger text" aria-label="Toggle bigger text" aria-pressed={config.bigText} onClick={() => setConfig((c) => ({ ...c, bigText: !c.bigText }))} style={config.bigText ? { background: 'var(--butter)', color: 'var(--ink)' } : null}><Icon name="type" /></button>
+          <button type="button" className="ibtn" title="Fullscreen party mode" aria-label="Fullscreen" onClick={fullscreen}><Icon name="max" /></button>
+          <button type="button" className="ibtn" title="Edit game" aria-label="Edit game" onClick={openEditor}><Icon name="pencil" /></button>
+        </div>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] items-start">
+        {/* Wheel column */}
+        <section className="grid gap-4 justify-items-center" aria-label="The wheel">
+          <div className="grid gap-1 justify-items-center text-center">
+            <span className="f-marquee text-xs" style={{ color: 'var(--baby)', letterSpacing: '.16em' }}>NOW SPINNING</span>
+            <span className="f-display" style={{ fontSize: 'calc(clamp(2rem,5vw,3.4rem) * var(--txt-scale))', lineHeight: 1, color: 'var(--cream)', textShadow: '0 3px 0 var(--cherry), 0 0 30px rgba(255,46,147,.5)' }}>{cur ? cur.name : '—'}{cur && cur.name.toLowerCase() === 'sakshi' ? ' 👑' : ''}</span>
+          </div>
+          {cats.length ? (
+            <Wheel cats={cats} rotorRef={rotorRef} rotRef={rotRef} hubPhoto={hubPhoto} spinning={phase === 'spinning'} />
+          ) : (
+            <div className="card p-8 text-center grid gap-4 max-w-md"><p className="font-black text-xl">Every category is switched off, so there's nothing to spin.</p><button type="button" className="btn btn-pink justify-self-center" onClick={openEditor}>TURN SOME ON</button></div>
+          )}
+          <div className="live-label" ref={liveRef} aria-live="off" />
+          {phase !== 'revealed' && (
+            <button type="button" className="btn btn-gold btn-huge pulse" disabled={phase === 'spinning' || !cats.length} onClick={spin}>
+              {phase === 'spinning' ? 'SPINNING…' : 'SPIN THE WHEEL'}
+            </button>
+          )}
+          {phase === 'idle' && <span className="text-xs font-bold" style={{ color: 'var(--baby)', opacity: .8 }}>Tip: press the space bar to spin</span>}
+        </section>
+
+        {/* Challenge column */}
+        <section ref={cardRef} aria-live="polite" aria-label="Challenge">
+          {!reveal ? (
+            <div className="panel p-6 sm:p-8 grid gap-5">
+              <div className="flex items-center gap-3"><span style={{ fontSize: '2.4rem' }}>{spice.emoji}</span><div><div className="label">CURRENT LEVEL</div><div className="f-display" style={{ fontSize: '1.8rem', lineHeight: 1.1 }}>{spice.label}</div></div></div>
+              <p className="font-extrabold text-lg" style={{ color: 'var(--baby)' }}>{phase === 'spinning' ? 'Fate is deciding. Nobody look directly at the wheel.' : `${cur ? cur.name : 'Someone'}, spin to find out what you're doing. Anyone can pass on anything.`}</p>
+              <div className="grid gap-2">
+                <div className="label">UP NEXT</div>
+                <div className="flex flex-wrap gap-2">
+                  {players.map((p, i) => <span key={p.id} className="pill" style={i === game.turn % players.length ? { background: 'var(--butter)', color: 'var(--ink)', boxShadow: 'none' } : null}>{p.name}{game.scoring ? ` · ${p.score}` : ''}</span>)}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <div className="label">ON THE WHEEL</div>
+                <div className="flex flex-wrap gap-2">{cats.map((c) => <span key={c.id} className="tag" style={{ background: c.color, color: textOn(c.color) }}>{c.emoji} {c.name}</span>)}</div>
+              </div>
+            </div>
+          ) : reveal.kind === 'empty' ? (
+            <div className="card p-6 sm:p-8 grid gap-4 reveal-in">
+              <div className="f-display" style={{ fontSize: '2rem', color: 'var(--pink)' }}>{reveal.cat.emoji} {reveal.cat.name}</div>
+              <p className="font-black text-xl">This category has no challenges yet. Add some in Edit Game, or spin again.</p>
+              <div className="flex gap-3 flex-wrap"><button type="button" className="btn btn-gold" onClick={spin}><Icon name="refresh" size={16} /> SPIN AGAIN</button><button type="button" className="btn btn-pink" onClick={openEditor}>ADD CHALLENGES</button></div>
+            </div>
+          ) : (
+            <div className={`${reveal.queen ? 'gold-card' : 'card'} p-5 sm:p-7 grid gap-4 reveal-in`} key={reveal.text}>
+              {reveal.kind === 'chaos' ? (
+                <div className="cat-banner text-center rounded-2xl py-3 px-4" style={{ background: 'repeating-linear-gradient(-45deg,#d7193f 0 14px,#ff2e93 14px 28px)', color: '#fff4e3' }}>
+                  <div className="f-marquee text-xs" style={{ letterSpacing: '.2em' }}>🌀 SURPRISE CHAOS CARD 🌀</div>
+                  <div className="f-display" style={{ fontSize: 'clamp(2rem,5vw,3rem)', lineHeight: 1.05, textShadow: '0 3px 0 #3a0a1e' }}>{reveal.title}</div>
+                </div>
+              ) : (
+                <div className="cat-banner flex items-center gap-3 rounded-2xl py-3 px-4" style={{ background: reveal.cat.color, color: textOn(reveal.cat.color) }}>
+                  <span style={{ fontSize: 'clamp(2rem,4vw,2.8rem)' }}>{reveal.cat.emoji}</span>
+                  <div className="min-w-0"><div className="f-marquee text-xs" style={{ letterSpacing: '.14em', opacity: .85 }}>THE WHEEL HAS CHOSEN</div><div className="f-display" style={{ fontSize: 'clamp(1.5rem,3.4vw,2.3rem)', lineHeight: 1.05 }}>{reveal.cat.name}</div></div>
+                </div>
+              )}
+              {reveal.queen && (
+                <div className="text-center grid gap-1">
+                  <div className="f-display" style={{ fontSize: 'clamp(1.8rem,4.4vw,2.8rem)', color: 'var(--cherry)', lineHeight: 1 }}>👑 The Queen has spoken.</div>
+                  <div className="font-black">Sakshi picks who takes this challenge or answers the question.</div>
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {players.filter((p) => p.name.trim().toLowerCase() !== 'sakshi').map((p) => <button type="button" key={p.id} className={`chip ${performer === p.id ? 'on' : ''}`} onClick={() => { setPerformer(p.id); Sound.pop(); }}>{p.name}</button>)}
+                  </div>
+                </div>
+              )}
+              {reveal.kind !== 'chaos' && (
+                <div className={`photo-frame ${revealPhoto ? 'reveal-photo' : ''}`} style={revealPhoto ? null : { aspectRatio: '16/7' }}>
+                  {revealPhoto ? <FitImg src={revealPhoto} alt={`Sakshi, for ${reveal.cat.name}`} /> : <Placeholder cat={reveal.cat} />}
+                </div>
+              )}
+              <p className="challenge-text">{reveal.text}</p>
+              <div className="flex flex-wrap gap-2 items-center">
+                {reveal.kind === 'challenge' && <span className="tag" style={{ background: 'rgba(58,10,30,.08)', color: 'var(--ink)' }}>{spice.emoji} {spice.label.toUpperCase()}{reveal.fallback ? ' · BORROWED LEVEL' : ''}</span>}
+                {reveal.kind === 'challenge' && <span className="tag" style={{ background: 'rgba(58,10,30,.08)', color: 'var(--ink)' }}>{reveal.left} LEFT IN POOL</span>}
+                {!reveal.queen && cur && <span className="tag" style={{ background: 'var(--baby)', color: 'var(--ink)' }}>🎤 {cur.name.toUpperCase()}</span>}
+                <span className="text-sm font-bold" style={{ color: 'var(--ink-soft)' }}>Anyone can pass. No explanation needed.</span>
+              </div>
+              {reveal.vote && <VotePanel players={players} votes={votes} setVotes={setVotes} />}
+              <Timer key={reveal.text} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button type="button" className="btn btn-pink btn-big" disabled={reveal.queen && !performer && players.length > 1} onClick={() => finish('done')}>
+                  <Icon name="check" /> {reveal.queen && !performer ? 'SAKSHI, PICK SOMEONE' : 'CHALLENGE COMPLETED'}
+                </button>
+                <button type="button" className="btn btn-cream btn-big" onClick={() => finish('skipped')}><Icon name="skip" /> SKIP</button>
+                <button type="button" className="btn btn-lav" onClick={newChallenge}><Icon name="refresh" size={18} /> NEW CHALLENGE</button>
+                <button type="button" className="btn btn-gold" onClick={spin}><Icon name="refresh" size={18} /> SPIN AGAIN</button>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {overlay?.type === 'leaderboard' && <Leaderboard players={players} scoring={game.scoring} onClose={() => setOverlay(null)} />}
+      {overlay?.type === 'history' && <HistoryPanel history={game.history} cats={config.categories} onClose={() => setOverlay(null)} />}
+      {overlay?.type === 'spotlight' && <Spotlight item={overlay.item} scoring={game.scoring} onDone={spotlightDone} />}
+      {overlay?.type === 'players' && <PlayersPanel game={game} setGame={setGame} onClose={() => setOverlay(null)} />}
+      {overlay?.type === 'finale' && <Finale finalPhoto={config.finalPhotoId ? photos[config.finalPhotoId] : null} photos={(config.albums?.group || []).map((id) => photos[id]).filter(Boolean).length ? (config.albums.group || []).map((id) => photos[id]).filter(Boolean) : [config.finalPhotoId ? null : hubPhoto, ...config.categories.map((c) => c.photoId && photos[c.photoId])].filter(Boolean)} onContinue={() => setOverlay(null)} onHome={() => { setOverlay(null); goHome(); }} />}
+      {pendingSpice === 'unhinged' && <UnhingedWarning onAccept={() => { setConfig((c) => ({ ...c, spice: 'unhinged' })); setPendingSpice(null); boom('small'); }} onBack={() => { setPendingSpice(null); setConfig((c) => ({ ...c, spice: 'spicy' })); }} />}
+    </div>
+  );
+}
+
+function PlayersPanel({ game, setGame, onClose }) {
+  const [name, setName] = useState('');
+  const add = () => { const n = name.trim(); if (!n) return; setGame((g) => ({ ...g, players: [...g.players, { id: uid(), name: n.slice(0, 24), score: 0 }] })); setName(''); };
+  const remove = (id) => setGame((g) => { const idx = g.players.findIndex((p) => p.id === id); const ps = g.players.filter((p) => p.id !== id); let turn = g.turn % Math.max(g.players.length, 1); if (idx < turn) turn -= 1; return { ...g, players: ps, turn: ps.length ? turn % ps.length : 0 }; });
+  return (
+    <Modal onClose={onClose} label="Players">
+      <div className="card p-6 sm:p-8 grid gap-4">
+        <h2 className="f-display" style={{ fontSize: '2.4rem', color: 'var(--pink)' }}>Players</h2>
+        <form className="flex gap-2 flex-wrap" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <label htmlFor="add-player-mid" className="sr-only">New player</label>
+          <input id="add-player-mid" className="field flex-1" style={{ minWidth: 0 }} placeholder="Latecomer's name" value={name} onChange={(e) => setName(e.target.value)} maxLength={24} />
+          <button type="submit" className="btn btn-pink" disabled={!name.trim()}>ADD</button>
+        </form>
+        <ul className="grid gap-2">
+          {game.players.map((p, i) => (
+            <li key={p.id} className="flex items-center gap-3 rounded-2xl px-4 py-2" style={{ background: i === game.turn % game.players.length ? '#fff0b3' : '#fff9ee', boxShadow: 'inset 0 0 0 2px #f1dcc4' }}>
+              <span className="font-black flex-1 truncate">{p.name}</span>
+              {game.scoring && <span className="flex items-center gap-1"><button type="button" className="chip" aria-label={`Minus one point for ${p.name}`} onClick={() => setGame((g) => ({ ...g, players: g.players.map((x) => x.id === p.id ? { ...x, score: x.score - 1 } : x) }))}>−</button><span className="f-marquee w-8 text-center" style={{ fontVariantNumeric: 'tabular-nums' }}>{p.score}</span><button type="button" className="chip" aria-label={`Plus one point for ${p.name}`} onClick={() => setGame((g) => ({ ...g, players: g.players.map((x) => x.id === p.id ? { ...x, score: x.score + 1 } : x) }))}>+</button></span>}
+              <button type="button" className="chip" onClick={() => setGame((g) => ({ ...g, turn: i }))}>Their turn</button>
+              <button type="button" className="ibtn" style={{ background: '#fff', color: 'var(--ink)' }} aria-label={`Remove ${p.name}`} disabled={game.players.length <= 2} onClick={() => remove(p.id)}><Icon name="x" size={16} /></button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center justify-between gap-3"><span className="font-black">Keep score</span><Toggle id="scoring-mid" label="Keep score" on={game.scoring} onChange={(v) => setGame((g) => ({ ...g, scoring: v }))} /></div>
+        <button type="button" className="btn btn-gold justify-self-center" onClick={onClose}>BACK TO THE WHEEL</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* =========================================================
+   APP
+   ========================================================= */
+function App() {
+  const [config, setConfig] = useState(loadConfig);
+  const [game, setGame] = useState(loadGame);
+  const [photos, setPhotos] = useState({});
+  const [screen, setScreen] = useState('welcome');
+  const [editor, setEditor] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const [pendingUnhinged, setPendingUnhinged] = useState(false);
+  const idbOk = useRef(true); const warnedLS = useRef(false);
+
+  const toast = useCallback((msg, err = false) => {
+    const id = uid(); setToasts((t) => [...t.slice(-2), { id, msg, err }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), err ? 6500 : 3600);
+  }, []);
+
+  useEffect(() => { PhotoDB.all().then(setPhotos).catch(() => { idbOk.current = false; }); }, []);
+  useEffect(() => {
+    if (!lsSet(LS_CONFIG, config) && !warnedLS.current) { warnedLS.current = true; toast("This browser won't let the game save edits, so they'll be lost on refresh. Use Save & Share → Export to keep a copy.", true); }
+  }, [config]);
+  useEffect(() => { lsSet(LS_GAME, game); }, [game]);
+  useEffect(() => { Sound.setOn(config.sound); }, [config.sound]);
+  useEffect(() => {
+    const el = document.getElementById('bg-photo'); const src = config.bgPhotoId && photos[config.bgPhotoId];
+    if (el) { if (src) { el.style.backgroundImage = `url(${src})`; el.hidden = false; } else { el.hidden = true; el.style.backgroundImage = ''; } }
+  }, [config.bgPhotoId, photos]);
+
+  const addPhoto = useCallback(async (file) => {
+    try {
+      const data = await compressImage(file); const id = 'p-' + uid();
+      setPhotos((p) => ({ ...p, [id]: data }));
+      if (idbOk.current) {
+        try { await PhotoDB.put(id, data); }
+        catch (e) {
+          const quota = e && (e.name === 'QuotaExceededError' || /quota/i.test(String(e.message)));
+          toast(quota ? 'Photo storage is full. Remove some photos in Edit Game → Photos, then try again. This one will vanish on refresh.' : "Couldn't save the photo to this browser. It will show until you refresh.", true);
+        }
+      } else toast('This browser blocks photo storage, so photos will disappear on refresh.', true);
+      return id;
+    } catch (e) { toast(e.message || 'That photo could not be added.', true); return null; }
+  }, [toast]);
+  const removePhoto = useCallback(async (id) => { setPhotos((p) => { const n = { ...p }; delete n[id]; return n; }); try { await PhotoDB.del(id); } catch (e) {} }, []);
+  const importPhotos = useCallback(async (map) => { setPhotos((p) => ({ ...p, ...map })); for (const [k, v] of Object.entries(map)) { try { await PhotoDB.put(k, v); } catch (e) { toast('Some imported photos could not be stored (storage full).', true); break; } } }, [toast]);
+  const clearPhotos = useCallback(async () => { setPhotos({}); try { await PhotoDB.clear(); } catch (e) {} }, []);
+
+  const counts = useMemo(() => {
+    const on = new Set(config.categories.filter((c) => c.enabled).map((c) => c.id));
+    return Object.fromEntries(SPICE_KEYS.map((k) => [k, config.questions.filter((q) => q.lvl === k && on.has(q.cat)).length]));
+  }, [config]);
+
+  const mainPhoto = config.mainPhotoId ? photos[config.mainPhotoId] : null;
+  const canResume = game.active && game.players.length >= 2;
+
+  const startFresh = () => { Sound.unlock(); setGame((g) => ({ ...freshGame(), players: g.players.map((p) => ({ ...p, score: 0 })), scoring: g.scoring })); setScreen('setup'); };
+  const pickSpice = (k) => {
+    if (k === 'unhinged') { setPendingUnhinged(true); return; }
+    setConfig((c) => ({ ...c, spice: k })); setGame((g) => ({ ...g, active: true, turn: 0 })); setScreen('game');
+  };
+
+  return (
+    <div className="app">
+      {screen === 'welcome' && (
+        <Welcome photo={mainPhoto} canResume={canResume} resumeInfo={`${game.completed} DONE`}
+          onPhoto={async (f) => { const id = await addPhoto(f); if (id) { setConfig((c) => ({ ...c, mainPhotoId: id })); toast('Looking iconic. She is now in the middle of the wheel too.'); } }}
+          onStart={startFresh} onResume={() => { Sound.unlock(); setScreen('game'); }} onEdit={() => setEditor(true)} />
+      )}
+      {screen === 'setup' && <Setup game={game} setGame={setGame} onBack={() => setScreen('welcome')} onNext={() => setScreen('spice')} />}
+      {screen === 'spice' && <SpicePick current={config.spice} counts={counts} onBack={() => setScreen('setup')} onPick={pickSpice} />}
+      {screen === 'game' && (game.players.length >= 2 ? (
+        <GameScreen config={config} setConfig={setConfig} game={game} setGame={setGame} photos={photos} toast={toast} overlayActive={editor}
+          openEditor={() => setEditor(true)} goHome={() => setScreen('welcome')} />
+      ) : (
+        <main className="max-w-md mx-auto card p-8 grid gap-4 text-center mt-10"><p className="font-black text-xl">This game needs at least two players.</p><button type="button" className="btn btn-pink justify-self-center" onClick={() => setScreen('setup')}>ADD PLAYERS</button></main>
+      ))}
+      {editor && <Editor config={config} setConfig={setConfig} photos={photos} addPhoto={addPhoto} removePhoto={removePhoto} game={game} setGame={setGame} onClose={() => setEditor(false)} toast={toast} importPhotos={importPhotos} clearPhotos={clearPhotos} />}
+      {pendingUnhinged && <UnhingedWarning onAccept={() => { setPendingUnhinged(false); setConfig((c) => ({ ...c, spice: 'unhinged' })); setGame((g) => ({ ...g, active: true, turn: 0 })); setScreen('game'); }} onBack={() => setPendingUnhinged(false)} />}
+      <Toasts items={toasts} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
